@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Crown,
   Languages,
+  MessageSquare,
 } from 'lucide-react';
 
 import { Logo } from '@/components/logo';
@@ -90,10 +91,11 @@ export function AppHeader() {
     { href: '/my-books', label: t('my_books'), icon: Book },
     { href: '/wishlist', label: t('wishlist'), icon: Heart },
     { href: '/swaps', label: t('swaps'), icon: Repeat },
+    { href: '/chat', label: t('chat'), icon: MessageSquare },
   ];
 
   const NavLink = ({ href, label, icon: Icon }: (typeof navLinks)[0]) => {
-    const isActive = pathname === href;
+    const isActive = pathname.startsWith(href);
     return (
       <Link
         href={href}
@@ -111,7 +113,7 @@ export function AppHeader() {
   };
 
   const MobileNavLink = ({ href, label, icon: Icon }: (typeof navLinks)[0]) => {
-    const isActive = pathname === href;
+    const isActive = pathname.startsWith(href);
     return (
       <Link
         href={href}

@@ -5,6 +5,7 @@
   "my_books": "My Books",
   "wishlist": "Wishlist",
   "swaps": "Swaps",
+  "chat": "Messages",
   "profile": "Profile",
   "shop_dashboard": "Shop Dashboard",
   "upgrade": "Upgrade",
@@ -199,5 +200,11 @@
   "profile_genres_limit_error": "You can select a maximum of 5 genres.",
   "profile_genres_save_success": "Favorite genres updated!",
   "home_suggested_books_title": "Suggested for You",
-  "home_suggested_books_desc": "Based on your favorite genres, you might like these:"
+  "home_suggested_books_desc": "Based on your favorite genres, you might like these:",
+  "chat_title": "Messages",
+  "chat_subtitle": "Your conversations with other members of the community.",
+  "chat_search_placeholder": "Search messages or users...",
+  "chat_select_conversation": "Select a conversation to start chatting",
+  "chat_type_message_placeholder": "Type a message...",
+  "chat_send_button": "Send"
 }

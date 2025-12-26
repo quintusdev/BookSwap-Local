@@ -5,6 +5,7 @@
   "my_books": "I Miei Libri",
   "wishlist": "Lista Desideri",
   "swaps": "Scambi",
+  "chat": "Messaggi",
   "profile": "Profilo",
   "shop_dashboard": "Dashboard Negozio",
   "upgrade": "Aggiorna",
@@ -199,5 +200,11 @@
   "profile_genres_limit_error": "Puoi selezionare un massimo di 5 generi.",
   "profile_genres_save_success": "Generi preferiti aggiornati!",
   "home_suggested_books_title": "Consigliati per Te",
-  "home_suggested_books_desc": "In base ai tuoi generi preferiti, potrebbero piacerti questi:"
+  "home_suggested_books_desc": "In base ai tuoi generi preferiti, potrebbero piacerti questi:",
+  "chat_title": "Messaggi",
+  "chat_subtitle": "Le tue conversazioni con altri membri della comunità.",
+  "chat_search_placeholder": "Cerca messaggi o utenti...",
+  "chat_select_conversation": "Seleziona una conversazione per iniziare a chattare",
+  "chat_type_message_placeholder": "Scrivi un messaggio...",
+  "chat_send_button": "Invia"
 }

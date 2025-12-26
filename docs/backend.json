@@ -28,15 +28,15 @@
           "description": "City where the user is located."
         },
         "avatarUrl": {
-            "type": "string",
-            "description": "URL of the user's profile picture."
+          "type": "string",
+          "description": "URL of the user's profile picture."
         },
         "favoriteGenres": {
-            "type": "array",
-            "description": "A list of the user's favorite book genres.",
-            "items": {
-                "type": "string"
-            }
+          "type": "array",
+          "description": "A list of the user's favorite book genres.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -227,6 +227,65 @@
         "date",
         "amount"
       ]
+    },
+    "Chat": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Chat",
+      "type": "object",
+      "description": "Represents a chat conversation between users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the chat session."
+        },
+        "users": {
+          "type": "array",
+          "description": "An array of user IDs participating in the chat.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lastMessage": {
+          "type": "object",
+          "description": "The last message sent in the chat, for preview purposes.",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "required": ["id", "users"]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a single message within a chat.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "The ID of the user who sent the message."
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The time the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "senderId", "text", "timestamp"]
     }
   },
   "auth": {
@@ -344,8 +403,44 @@
             }
           ]
         }
+      },
+       {
+        "path": "/chats/{chatId}",
+        "definition": {
+          "entityName": "Chat",
+          "schema": {
+            "$ref": "#/backend/entities/Chat"
+          },
+          "description": "Stores chat sessions between users. Access is restricted to participants.",
+          "params": [
+            {
+              "name": "chatId",
+              "description": "The unique identifier for the chat."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chats/{chatId}/messages/{messageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores individual messages within a chat. Access is restricted to chat participants.",
+          "params": [
+            {
+              "name": "chatId",
+              "description": "The unique identifier for the chat."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for the message."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the BookSwap application's core features, emphasizing security, scalability, and ease of debugging.  Authorization Independence is achieved through denormalization where necessary (specifically within Swaps).  Structural Segregation separates user-owned data (books, wishlists, swap passes) from global data (users, library transactions), simplifying security rules.  Access Modeling utilizes path-based ownership for user data and existence checks for global roles. QAPs are supported by segregating data based on access control needs (private user data vs. public book listings, managed through security rules). The structure facilitates secure `list` operations by avoiding the need for complex filtering within the rules themselves.  This approach makes the rules simpler and more secure. By adhering to the design principles, we can create a maintainable, understandable, and scalable backend for the BookSwap application."
+    "reasoning": "The Firestore data structure is designed to support the BookSwap application's core features, emphasizing security, scalability, and ease of debugging.  Authorization Independence is achieved through denormalization where necessary (specifically within Swaps and Chats).  Structural Segregation separates user-owned data (books, wishlists, swap passes) from global data (users, library transactions, chats), simplifying security rules.  Access Modeling utilizes path-based ownership for user data and existence checks for global roles and shared documents (like chats). QAPs are supported by segregating data based on access control needs (private user data vs. public book listings, managed through security rules). The structure facilitates secure `list` operations by avoiding the need for complex filtering within the rules themselves.  This approach makes the rules simpler and more secure. By adhering to the design principles, we can create a maintainable, understandable, and scalable backend for the BookSwap application."
   }
 }
