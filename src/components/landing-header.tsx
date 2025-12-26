@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Logo } from './logo';
 import { useLanguage } from '@/context/language-context';
 
@@ -51,6 +51,7 @@ export function LandingHeader() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
+              <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
               <nav className="grid gap-6 text-lg font-medium mt-10">
                 <Logo />
                 {navLinks.map((link) => (
