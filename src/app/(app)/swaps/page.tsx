@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockSwaps, mockUsers, mockBooks } from '@/lib/placeholder-data';
-import { ArrowRight, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowRight, Clock, CheckCircle, XCircle, QrCode } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -128,11 +128,16 @@ function SwapCard({ swap }: { swap: typeof mockSwaps[0] }) {
             </div>
 
             {swap.status === 'accepted' && (
-                 <Card className='bg-muted'>
+                 <Card className='bg-muted/50'>
                     <CardContent className='p-4 text-center'>
-                        <p className='font-semibold'>{t('swaps_check_in_at')} {swap.shopName}</p>
-                        <p className='text-sm text-muted-foreground'>{t('swaps_use_code')}</p>
-                        <p className='font-mono text-2xl font-bold text-primary tracking-widest mt-2'>{swap.checkinCode}</p>
+                        <div className="flex justify-center items-center gap-2">
+                           <QrCode className="h-5 w-5 text-muted-foreground" />
+                           <p className='font-semibold'>{t('swaps_check_in_at')} {swap.shopName}</p>
+                        </div>
+                        <p className='text-sm text-muted-foreground mt-1'>{t('swaps_use_code')}</p>
+                        <div className='bg-background border-2 border-dashed border-primary/50 rounded-lg p-3 mt-2 inline-block'>
+                            <p className='font-mono text-3xl font-bold text-primary tracking-widest'>{swap.checkinCode}</p>
+                        </div>
                     </CardContent>
                 </Card>
             )}
@@ -145,3 +150,5 @@ function SwapCard({ swap }: { swap: typeof mockSwaps[0] }) {
         </div>
     )
 }
+
+    
