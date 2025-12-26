@@ -1,3 +1,6 @@
+
+'use client';
+
 import Image from 'next/image';
 import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,18 +30,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { mockWishlist } from '@/lib/placeholder-data';
-import { Separator } from '@/components/ui/separator';
+import { useLanguage } from '@/context/language-context';
 
 export default function WishlistPage() {
+    const { t } = useLanguage();
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">
-            My Wishlist
+            {t('wishlist_title_page')}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            A list of books you want to get your hands on. We'll notify you if they become available.
+            {t('wishlist_subtitle')}
           </p>
         </div>
         <AddWishDialog />
@@ -62,7 +66,7 @@ export default function WishlistPage() {
                 <CardDescription>{book.author}</CardDescription>
                 <Button variant="outline" size="sm" className="mt-2">
                     <Search className="mr-2 h-4 w-4" />
-                    Find a match
+                    {t('wishlist_find_match_button')}
                 </Button>
               </div>
               <WishActions />
@@ -72,8 +76,8 @@ export default function WishlistPage() {
          {mockWishlist.length === 0 && (
             <Card className="col-span-full flex flex-col items-center justify-center py-12">
                 <CardHeader>
-                    <CardTitle>Your wishlist is empty!</CardTitle>
-                    <CardDescription>Add a book you'd like to read.</CardDescription>
+                    <CardTitle>{t('wishlist_empty_title')}</CardTitle>
+                    <CardDescription>{t('wishlist_empty_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <AddWishDialog />
@@ -86,37 +90,38 @@ export default function WishlistPage() {
 }
 
 function AddWishDialog() {
+    const { t } = useLanguage();
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add to Wishlist
+          {t('wishlist_add_to_wishlist_button')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add to Wishlist</DialogTitle>
+          <DialogTitle>{t('wishlist_dialog_title')}</DialogTitle>
           <DialogDescription>
-            What book are you dreaming of reading next?
+            {t('wishlist_dialog_desc')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right">
-              Title
+              {t('my_books_dialog_book_title_label')}
             </Label>
             <Input id="title" placeholder="Dune" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="author" className="text-right">
-              Author
+              {t('my_books_dialog_author_label')}
             </Label>
             <Input id="author" placeholder="Frank Herbert" className="col-span-3" />
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" className="bg-primary hover:bg-primary/90">Add to Wishlist</Button>
+          <Button type="submit" className="bg-primary hover:bg-primary/90">{t('wishlist_add_to_wishlist_button')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -124,6 +129,7 @@ function AddWishDialog() {
 }
 
 function WishActions() {
+    const { t } = useLanguage();
     return (
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -133,9 +139,9 @@ function WishActions() {
             </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuItem className='text-destructive'>Remove</DropdownMenuItem>
+            <DropdownMenuLabel>{t('my_books_actions_label')}</DropdownMenuLabel>
+            <DropdownMenuItem>{t('my_books_actions_edit')}</DropdownMenuItem>
+            <DropdownMenuItem className='text-destructive'>{t('wishlist_actions_remove')}</DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     )

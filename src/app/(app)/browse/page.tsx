@@ -1,3 +1,6 @@
+
+'use client';
+
 import { BookCard } from '@/components/book-card';
 import {
   Select,
@@ -9,30 +12,32 @@ import {
 import { Input } from '@/components/ui/input';
 import { allCities, mockBooks } from '@/lib/placeholder-data';
 import { Search } from 'lucide-react';
+import { useLanguage } from '@/context/language-context';
 
 export default function BrowsePage() {
+    const { t } = useLanguage();
   return (
     <div className="space-y-8">
       <div>
         <h1 className="font-headline text-3xl font-bold tracking-tight">
-          Browse Books
+          {t('browse_title')}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Discover thousands of books waiting for a new home. Filter by city to find swaps near you.
+          {t('browse_subtitle')}
         </p>
       </div>
 
       <div className="flex flex-col gap-4 md:flex-row">
         <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="Search by title, author, or ISBN..." className="pl-10" />
+            <Input placeholder={t('browse_search_placeholder')} className="pl-10" />
         </div>
         <Select>
           <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Filter by City" />
+            <SelectValue placeholder={t('browse_filter_by_city')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Cities</SelectItem>
+            <SelectItem value="all">{t('browse_all_cities')}</SelectItem>
             {allCities.map((city) => (
               <SelectItem key={city} value={city.toLowerCase().replace(' ', '-')}>
                 {city}

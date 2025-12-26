@@ -1,3 +1,6 @@
+
+'use client';
+
 import Image from 'next/image';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,19 +32,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { mockBooks, mockUsers } from '@/lib/placeholder-data';
 import { Badge } from '@/components/ui/badge';
+import { useLanguage } from '@/context/language-context';
 
 const userBooks = mockBooks.filter((book) => book.ownerId === 'user-1');
 
 export default function MyBooksPage() {
+    const { t } = useLanguage();
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">
-            My Books
+            {t('my_books_title')}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Manage the books you've made available for swapping.
+            {t('my_books_subtitle')}
           </p>
         </div>
         <AddBookDialog />
@@ -64,7 +69,7 @@ export default function MyBooksPage() {
                 <CardTitle className="text-lg leading-tight">{book.title}</CardTitle>
                 <CardDescription>{book.author}</CardDescription>
                 <Badge variant={book.status === 'available' ? 'default' : 'secondary'} className='capitalize'>
-                    {book.status}
+                    {t(`status_${book.status}`)}
                 </Badge>
               </div>
               <BookActions />
@@ -74,8 +79,8 @@ export default function MyBooksPage() {
         {userBooks.length === 0 && (
             <Card className="col-span-full flex flex-col items-center justify-center py-12">
                 <CardHeader>
-                    <CardTitle>No books yet!</CardTitle>
-                    <CardDescription>Add your first book to start swapping.</CardDescription>
+                    <CardTitle>{t('my_books_no_books_title')}</CardTitle>
+                    <CardDescription>{t('my_books_no_books_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <AddBookDialog />
@@ -88,49 +93,50 @@ export default function MyBooksPage() {
 }
 
 function AddBookDialog() {
+    const { t } = useLanguage();
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add New Book
+          {t('my_books_add_new_button')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add a New Book</DialogTitle>
+          <DialogTitle>{t('my_books_dialog_title')}</DialogTitle>
           <DialogDescription>
-            Enter the details of the book you want to add to your swap library.
+            {t('my_books_dialog_desc')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right">
-              Title
+              {t('my_books_dialog_book_title_label')}
             </Label>
             <Input id="title" placeholder="The Great Gatsby" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="author" className="text-right">
-              Author
+              {t('my_books_dialog_author_label')}
             </Label>
             <Input id="author" placeholder="F. Scott Fitzgerald" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="isbn" className="text-right">
-              ISBN
+              {t('my_books_dialog_isbn_label')}
             </Label>
             <Input id="isbn" placeholder="9780743273565 (Optional)" className="col-span-3" />
           </div>
            <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="city" className="text-right">
-              City
+              {t('my_books_dialog_city_label')}
             </Label>
             <Input id="city" defaultValue={mockUsers[0].city} className="col-span-3" />
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" className="bg-primary hover:bg-primary/90">Add Book</Button>
+          <Button type="submit" className="bg-primary hover:bg-primary/90">{t('my_books_dialog_add_book_button')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -138,6 +144,7 @@ function AddBookDialog() {
 }
 
 function BookActions() {
+    const { t } = useLanguage();
     return (
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -147,10 +154,10 @@ function BookActions() {
             </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuItem>Mark as Swapped</DropdownMenuItem>
-            <DropdownMenuItem className='text-destructive'>Delete</DropdownMenuItem>
+            <DropdownMenuLabel>{t('my_books_actions_label')}</DropdownMenuLabel>
+            <DropdownMenuItem>{t('my_books_actions_edit')}</DropdownMenuItem>
+            <DropdownMenuItem>{t('my_books_actions_mark_swapped')}</DropdownMenuItem>
+            <DropdownMenuItem className='text-destructive'>{t('my_books_actions_delete')}</DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     )

@@ -1,3 +1,6 @@
+
+'use client';
+
 import {
   Card,
   CardContent,
@@ -19,44 +22,46 @@ import { Input } from '@/components/ui/input';
 import { mockSwaps } from '@/lib/placeholder-data';
 import { format } from 'date-fns';
 import { Book, Users, QrCode } from 'lucide-react';
+import { useLanguage } from '@/context/language-context';
 
 const completedSwaps = mockSwaps.filter((s) => s.status === 'completed');
 
 export default function DashboardPage() {
+    const { t } = useLanguage();
     // In a real app, this page would be protected and only visible to users with the 'shop' role.
   return (
     <div className="space-y-8">
       <div>
         <h1 className="font-headline text-3xl font-bold tracking-tight">
-          Shop Dashboard
+          {t('dashboard_title')}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Welcome, The Reader's Corner! Here's your activity overview.
+          {t('dashboard_subtitle')}
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Swaps</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard_total_swaps')}</CardTitle>
             <Book className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{completedSwaps.length}</div>
             <p className="text-xs text-muted-foreground">
-              exchanges completed at your location
+              {t('dashboard_total_swaps_desc')}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Footfall Generated</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard_footfall')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{completedSwaps.length * 2}</div>
             <p className="text-xs text-muted-foreground">
-              customers brought in through swaps
+              {t('dashboard_footfall_desc')}
             </p>
           </CardContent>
         </Card>
@@ -64,16 +69,16 @@ export default function DashboardPage() {
             <CardHeader>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <QrCode className="h-4 w-4 text-muted-foreground" />
-                    Validate a Swap
+                    {t('dashboard_validate_swap')}
                 </CardTitle>
                 <CardDescription className='text-xs'>
-                    Enter a user's code to check-in a swap.
+                    {t('dashboard_validate_swap_desc')}
                 </CardDescription>
             </CardHeader>
             <CardContent>
                  <div className="flex w-full items-center space-x-2">
                     <Input type="text" placeholder="BSWAP-XXXXX" />
-                    <Button type="submit">Validate</Button>
+                    <Button type="submit">{t('dashboard_validate_button')}</Button>
                 </div>
             </CardContent>
         </Card>
@@ -81,20 +86,20 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Check-ins</CardTitle>
+          <CardTitle>{t('dashboard_recent_checkins')}</CardTitle>
           <CardDescription>
-            A list of the most recent swaps completed at your store.
+            {t('dashboard_recent_checkins_desc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Swap Code</TableHead>
-                <TableHead>Book 1</TableHead>
-                <TableHead>Book 2</TableHead>
-                <TableHead>Users</TableHead>
-                <TableHead className="text-right">Date</TableHead>
+                <TableHead>{t('dashboard_table_swap_code')}</TableHead>
+                <TableHead>{t('dashboard_table_book1')}</TableHead>
+                <TableHead>{t('dashboard_table_book2')}</TableHead>
+                <TableHead>{t('dashboard_table_users')}</TableHead>
+                <TableHead className="text-right">{t('dashboard_table_date')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -1,3 +1,6 @@
+
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, Book, Heart, Repeat, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,52 +15,55 @@ import { mockBooks, mockSwaps, mockUsers } from '@/lib/placeholder-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { useLanguage } from '@/context/language-context';
 
 const currentUser = mockUsers[0];
 const userSwaps = mockSwaps.filter(
   (swap) => swap.ownerId === currentUser.id || swap.requesterId === currentUser.id
 );
 
-const quickLinks = [
-  {
-    href: '/browse',
-    title: 'Browse Books',
-    description: 'Find your next adventure.',
-    icon: Search,
-  },
-  {
-    href: '/my-books',
-    title: 'My Books',
-    description: 'Manage your collection.',
-    icon: Book,
-  },
-  {
-    href: '/wishlist',
-    title: 'My Wishlist',
-    description: 'Track books you desire.',
-    icon: Heart,
-  },
-  {
-    href: '/swaps',
-    title: 'My Swaps',
-    description: 'View your active trades.',
-    icon: Repeat,
-  },
-];
-
 export default function HomePage() {
+  const { t } = useLanguage();
+
+  const quickLinks = [
+    {
+      href: '/browse',
+      title: t('home_quicklink_browse_title'),
+      description: t('home_quicklink_browse_desc'),
+      icon: Search,
+    },
+    {
+      href: '/my-books',
+      title: t('home_quicklink_mybooks_title'),
+      description: t('home_quicklink_mybooks_desc'),
+      icon: Book,
+    },
+    {
+      href: '/wishlist',
+      title: t('home_quicklink_wishlist_title'),
+      description: t('home_quicklink_wishlist_desc'),
+      icon: Heart,
+    },
+    {
+      href: '/swaps',
+      title: t('home_quicklink_swaps_title'),
+      description: t('home_quicklink_swaps_desc'),
+      icon: Repeat,
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className='space-y-1'>
             <h1 className="font-headline text-3xl font-bold tracking-tight">
-                Welcome back, {currentUser.name}!
+                {t('home_welcome')}, {currentUser.name}!
             </h1>
-            <p className='text-muted-foreground'>Here's what's happening with your books today.</p>
+            <p className='text-muted-foreground'>{t('home_subtitle')}</p>
         </div>
         <Button asChild>
           <Link href="/browse">
-            Start a New Swap <ArrowRight className="ml-2 h-4 w-4" />
+            {t('home_new_swap_button')} <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </div>
@@ -78,7 +84,7 @@ export default function HomePage() {
             </CardContent>
             <CardContent>
                <Button variant="outline" asChild className="w-full">
-                    <Link href={link.href}>Go to {link.title}</Link>
+                    <Link href={link.href}>{t('home_go_to')} {link.title}</Link>
                 </Button>
             </CardContent>
           </Card>
@@ -87,9 +93,9 @@ export default function HomePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Swap Activity</CardTitle>
+          <CardTitle>{t('home_recent_activity_title')}</CardTitle>
           <CardDescription>
-            An overview of your recent swap proposals and updates.
+            {t('home_recent_activity_desc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -107,22 +113,22 @@ export default function HomePage() {
                     </Avatar>
                     <div>
                       <p className="font-semibold">
-                        Swap with {currentUser.id === swap.ownerId ? swap.requesterName : swap.ownerName}
+                        {t('home_swap_with')} {currentUser.id === swap.ownerId ? swap.requesterName : swap.ownerName}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {swap.ownerBookTitle} for {swap.requesterBookTitle}
+                        {swap.ownerBookTitle} {t('home_swap_for')} {swap.requesterBookTitle}
                       </p>
                     </div>
                   </div>
                   <div className='text-right'>
-                    <Badge variant={swap.status === 'completed' ? 'default' : 'secondary'} className='capitalize mb-1'>{swap.status}</Badge>
+                    <Badge variant={swap.status === 'completed' ? 'default' : 'secondary'} className='capitalize mb-1'>{t(`status_${swap.status}`)}</Badge>
                     <p className='text-xs text-muted-foreground'>{format(swap.swapDate, 'PPP')}</p>
                   </div>
                 </div>
               ))
             ) : (
               <p className="text-center text-muted-foreground">
-                No recent swap activity.
+                {t('home_no_recent_activity')}
               </p>
             )}
           </div>

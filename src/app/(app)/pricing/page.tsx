@@ -1,18 +1,23 @@
+
+'use client';
+
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { pricingTiers } from '@/lib/placeholder-data';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/language-context';
 
 export default function PricingPage() {
+    const { t } = useLanguage();
   return (
     <div className="space-y-8">
        <div>
         <h1 className="font-headline text-3xl font-bold tracking-tight">
-          Swap Pass Plans
+          {t('pricing_title')}
         </h1>
         <p className="mt-2 text-muted-foreground max-w-2xl">
-          Choose the perfect plan to fuel your reading habits. More swaps, more stories.
+          {t('pricing_subtitle')}
         </p>
       </div>
 
@@ -27,14 +32,14 @@ export default function PricingPage() {
           >
             {tier.isFeatured && (
               <div className="w-full bg-primary py-1.5 text-center text-sm font-semibold text-primary-foreground">
-                Most Popular
+                {t('pricing_most_popular')}
               </div>
             )}
             <CardHeader>
-              <CardTitle>{tier.name}</CardTitle>
+              <CardTitle>{t(tier.name.toLowerCase())}</CardTitle>
               <CardDescription>
-                <span className="text-4xl font-bold">{tier.price}</span>
-                <span className="text-muted-foreground">{tier.pricePeriod}</span>
+                <span className="text-4xl font-bold">{tier.price === 'Free' ? t('pricing_free') : tier.price}</span>
+                <span className="text-muted-foreground">{tier.pricePeriod && t('pricing_month_short')}</span>
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
@@ -42,7 +47,7 @@ export default function PricingPage() {
                 {tier.features.map((feature, i) => (
                   <li key={i} className="flex items-center">
                     <Check className="mr-2 h-4 w-4 text-accent" />
-                    <span>{feature}</span>
+                    <span>{t(feature)}</span>
                   </li>
                 ))}
               </ul>
@@ -55,7 +60,7 @@ export default function PricingPage() {
                 )}
                 variant={tier.isFeatured ? 'default' : 'outline'}
               >
-                {tier.price === 'Free' ? 'Current Plan' : 'Choose Plan'}
+                {tier.price === 'Free' ? t('pricing_current_plan') : t('pricing_choose_plan')}
               </Button>
             </CardFooter>
           </Card>
