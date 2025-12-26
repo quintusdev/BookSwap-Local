@@ -128,11 +128,24 @@
         },
         "bookId": {
           "type": "string",
-          "description": "Reference to Book being swapped. (Relationship: Book 1:N Swap)"
+          "description": "Reference to Book being swapped."
         },
         "wishlistItemId": {
           "type": "string",
-          "description": "Reference to WishlistItem being swapped for. (Relationship: WishlistItem 1:N Swap)"
+          "description": "Reference to WishlistItem being swapped for."
+        },
+        "bookOwnerId": {
+            "type": "string",
+            "description": "The UID of the user who owns the book."
+        },
+        "wishlistOwnerId": {
+            "type": "string",
+            "description": "The UID of the user who made the wish and initiated the swap."
+        },
+        "participantIds": {
+            "type": "array",
+            "description": "An array containing the UIDs of both participants for easy querying.",
+            "items": { "type": "string" }
         },
         "swapCode": {
           "type": "string",
@@ -144,13 +157,16 @@
         },
         "status": {
           "type": "string",
-          "description": "Status of the swap (e.g., pending, completed, cancelled)."
+          "description": "Status of the swap (e.g., pending, accepted, completed, cancelled)."
         }
       },
       "required": [
         "id",
         "bookId",
         "wishlistItemId",
+        "bookOwnerId",
+        "wishlistOwnerId",
+        "participantIds",
         "swapCode",
         "status"
       ]

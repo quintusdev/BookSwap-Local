@@ -158,9 +158,10 @@ service cloud.firestore {
      * @principle Enforces shared access for collaborators and full access for admins.
      */
     match /swaps/{swapId} {
-      allow get, update, delete: if (isSignedIn() && (request.auth.uid == resource.data.bookOwnerId || request.auth.uid == resource.data.wishlistOwnerId)) || isSuperAdmin();
+      allow get, update: if (isSignedIn() && request.auth.uid in resource.data.participantIds) || isSuperAdmin();
       allow list: if isSuperAdmin();
-      allow create: if (isSignedIn() && request.resource.data.wishlistOwnerId == request.auth.uid) || isSuperAdmin();
+      allow create: if (isSignedIn() && request.auth.uid == request.resource.data.wishlistOwnerId) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
 
     /**
@@ -184,8 +185,7 @@ service cloud.firestore {
      * @principle Enforces that only chat members can access chat metadata.
      */
     match /chats/{chatId} {
-      allow get, update: if isSignedIn() && request.auth.uid in resource.data.users;
-      allow create: if isSignedIn() && request.auth.uid in request.resource.data.users;
+      allow get, update, create: if isSignedIn() && request.auth.uid in resource.data.users;
       allow list: if isSuperAdmin();
 
        /**
@@ -197,7 +197,7 @@ service cloud.firestore {
        */
       match /messages/{messageId} {
         allow list, get: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
-        allow create: if isSignedIn() && request.auth.uid == request.resource.data.senderId && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
+        allow create: if isSignedIn() && (request.auth.uid == request.resource.data.senderId || request.resource.data.senderId == 'system') && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
         allow update: if false; // Messages are immutable for users
         allow delete: if isSuperAdmin();
       }

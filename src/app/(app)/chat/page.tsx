@@ -6,59 +6,57 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/context/language-context';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Search, Send } from 'lucide-react';
-import { useState } from 'react';
+import { MessageSquare, Search, Send } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Dati di esempio - in un'app reale, questi verrebbero da Firebase
-const conversations = [
-  {
-    id: 'convo-1',
-    userName: 'Bob',
-    avatarUrl: 'https://i.pravatar.cc/150?u=bob',
-    lastMessage: 'Sounds good! See you then.',
-    lastMessageTimestamp: new Date(Date.now() - 5 * 60 * 1000),
-  },
-  {
-    id: 'convo-2',
-    userName: 'Charlie',
-    avatarUrl: 'https://i.pravatar.cc/150?u=charlie',
-    lastMessage: 'Can we meet at 5 PM instead?',
-    lastMessageTimestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-  },
-  {
-    id: 'convo-3',
-    userName: 'Diana',
-    avatarUrl: 'https://i.pravatar.cc/150?u=diana',
-    lastMessage: "I've arrived at the library.",
-    lastMessageTimestamp: new Date(Date.now() - 26 * 60 * 60 * 1000),
-  },
-];
-
-const messages = {
-  'convo-1': [
-    { id: 'msg-1-1', sender: 'Bob', text: "Hey! I'm interested in swapping 'To Kill a Mockingbird'.", timestamp: new Date(Date.now() - 15 * 60 * 1000) },
-    { id: 'msg-1-2', sender: 'Me', text: "Great! I'm available tomorrow at The Reader's Corner.", timestamp: new Date(Date.now() - 10 * 60 * 1000) },
-    { id: 'msg-1-3', sender: 'Bob', text: 'Sounds good! See you then.', timestamp: new Date(Date.now() - 5 * 60 * 1000) },
-  ],
-  'convo-2': [
-     { id: 'msg-2-1', sender: 'Charlie', text: "Hey, about our swap tomorrow.", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000 - 60000) },
-     { id: 'msg-2-2', sender: 'Charlie', text: "Can we meet at 5 PM instead?", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-  ],
-  'convo-3': [
-     { id: 'msg-3-1', sender: 'Diana', text: "I've arrived at the library.", timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000) },
-  ]
+type Chat = {
+  id: string;
+  users: string[];
+  userNames: { [key: string]: string };
+  userAvatars: { [key: string]: string };
+  lastMessage?: {
+    text: string;
+    timestamp: any;
+    senderId: string;
+  };
 };
 
-type Conversation = typeof conversations[0];
-type Message = typeof messages['convo-1'][0];
+type ChatMessage = {
+  id: string;
+  senderId: string;
+  text: string;
+  timestamp: any;
+};
 
 export default function ChatPage() {
   const { t, language } = useLanguage();
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(conversations[0]);
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+
+  const chatsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'chats'), where('users', 'array-contains', user.uid));
+  }, [firestore, user]);
+
+  const { data: chats, isLoading: isLoadingChats } = useCollection<Chat>(chatsQuery);
+
+  const messagesQuery = useMemoFirebase(() => {
+    if (!selectedChat) return null;
+    return query(collection(firestore, `chats/${selectedChat.id}/messages`), orderBy('timestamp', 'asc'));
+  }, [firestore, selectedChat]);
+
+  const { data: messages, isLoading: isLoadingMessages } = useCollection<ChatMessage>(messagesQuery);
+  
+  const [newMessage, setNewMessage] = useState('');
 
   const formatTimestamp = (date: Date) => {
+    if (!date) return '';
     if (isToday(date)) {
       return format(date, 'p', { locale: language === 'it' ? it : undefined });
     }
@@ -67,6 +65,27 @@ export default function ChatPage() {
     }
     return format(date, 'P', { locale: language === 'it' ? it : undefined });
   };
+  
+  const handleSendMessage = () => {
+    if (!user || !selectedChat || !newMessage.trim()) return;
+
+    const messagesCol = collection(firestore, `chats/${selectedChat.id}/messages`);
+    addDocumentNonBlocking(messagesCol, {
+      senderId: user.uid,
+      text: newMessage,
+      timestamp: new Date(),
+    });
+    setNewMessage('');
+  };
+  
+  const getOtherUser = (chat: Chat) => {
+    const otherUserId = chat.users.find(uid => uid !== user?.uid) || '';
+    return {
+        id: otherUserId,
+        name: chat.userNames[otherUserId],
+        avatar: chat.userAvatars[otherUserId],
+    }
+  }
 
   return (
     <div className="flex h-[calc(100vh-12rem)] border rounded-lg">
@@ -79,67 +98,80 @@ export default function ChatPage() {
             </div>
         </div>
         <ScrollArea className="flex-1">
-          {conversations.map((convo) => (
-            <div
-              key={convo.id}
-              className={cn(
-                "p-4 flex items-start gap-4 cursor-pointer hover:bg-muted/50",
-                selectedConversation?.id === convo.id && 'bg-muted'
-              )}
-              onClick={() => setSelectedConversation(convo)}
-            >
-              <Avatar>
-                <AvatarImage src={convo.avatarUrl} />
-                <AvatarFallback>{convo.userName.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 overflow-hidden">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold truncate">{convo.userName}</h3>
-                  <p className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatTimestamp(convo.lastMessageTimestamp)}
-                  </p>
+          {isLoadingChats && Array.from({length: 3}).map((_, i) => (
+             <div key={i} className="p-4 flex items-start gap-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className='flex-1 space-y-2'>
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
                 </div>
-                <p className="text-sm text-muted-foreground truncate">{convo.lastMessage}</p>
-              </div>
             </div>
           ))}
+          {!isLoadingChats && chats && chats.map((chat) => {
+            const otherUser = getOtherUser(chat);
+            return (
+                <div
+                key={chat.id}
+                className={cn(
+                    "p-4 flex items-start gap-4 cursor-pointer hover:bg-muted/50",
+                    selectedChat?.id === chat.id && 'bg-muted'
+                )}
+                onClick={() => setSelectedChat(chat)}
+                >
+                <Avatar>
+                    <AvatarImage src={otherUser.avatar} />
+                    <AvatarFallback>{otherUser.name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 overflow-hidden">
+                    <div className="flex justify-between items-center">
+                    <h3 className="font-semibold truncate">{otherUser.name}</h3>
+                     {chat.lastMessage?.timestamp && <p className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatTimestamp(chat.lastMessage.timestamp.toDate())}
+                    </p>}
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{chat.lastMessage?.text}</p>
+                </div>
+                </div>
+            )
+          })}
         </ScrollArea>
       </div>
       <div className="flex-1 flex flex-col">
-        {selectedConversation ? (
+        {selectedChat ? (
           <>
             <div className="p-4 border-b flex items-center gap-4">
               <Avatar>
-                <AvatarImage src={selectedConversation.avatarUrl} />
-                <AvatarFallback>{selectedConversation.userName.charAt(0)}</AvatarFallback>
+                <AvatarImage src={getOtherUser(selectedChat).avatar} />
+                <AvatarFallback>{getOtherUser(selectedChat).name?.charAt(0)}</AvatarFallback>
               </Avatar>
-              <h2 className="font-semibold text-lg">{selectedConversation.userName}</h2>
+              <h2 className="font-semibold text-lg">{getOtherUser(selectedChat).name}</h2>
             </div>
             <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
-                    {(messages[selectedConversation.id as keyof typeof messages] || []).map((msg: Message) => (
-                        <div key={msg.id} className={cn("flex", msg.sender === 'Me' ? 'justify-end' : 'justify-start')}>
+                    {isLoadingMessages && <Skeleton className="h-10 w-1/3" />}
+                    {messages && messages.map((msg: ChatMessage) => (
+                        <div key={msg.id} className={cn("flex", msg.senderId === user?.uid ? 'justify-end' : 'justify-start')}>
                             <div className={cn(
                                 "max-w-xs lg:max-w-md rounded-xl p-3",
-                                msg.sender === 'Me' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                                msg.senderId === user?.uid ? 'bg-primary text-primary-foreground' : 'bg-muted'
                             )}>
                                 <p className="text-sm">{msg.text}</p>
-                                <p className={cn("text-xs mt-1",  msg.sender === 'Me' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
-                                     {format(msg.timestamp, 'p', { locale: language === 'it' ? it : undefined })}
-                                </p>
+                                {msg.timestamp && <p className={cn("text-xs mt-1",  msg.senderId === user?.uid ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+                                     {format(msg.timestamp.toDate(), 'p', { locale: language === 'it' ? it : undefined })}
+                                </p>}
                             </div>
                         </div>
                     ))}
                 </div>
             </ScrollArea>
             <div className="p-4 border-t">
-                 <div className="flex items-center gap-2">
-                    <Input placeholder={t('chat_type_message_placeholder')} />
-                    <Button>
+                 <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-center gap-2">
+                    <Input placeholder={t('chat_type_message_placeholder')} value={newMessage} onChange={e => setNewMessage(e.target.value)} />
+                    <Button type="submit">
                         <Send className="h-5 w-5" />
                         <span className="sr-only">{t('chat_send_button')}</span>
                     </Button>
-                 </div>
+                 </form>
             </div>
           </>
         ) : (
