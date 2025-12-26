@@ -1,3 +1,70 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "landing-hero",
+      "description": "A cozy library with warm lighting",
+      "imageUrl": "https://images.unsplash.com/photo-1729932989176-6d905172c123?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjb3p5JTIwbGlicmFyeXxlbnwwfHx8fDE3NjY3Mjc1NDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cozy library"
+    },
+    {
+      "id": "book-cover-1",
+      "description": "Abstract cover for a fantasy book",
+      "imageUrl": "https://images.unsplash.com/photo-1711185900806-bf85e7fe7767?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxmYW50YXN5JTIwYm9va3xlbnwwfHx8fDE3NjY2NDc4ODF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy book"
+    },
+    {
+      "id": "book-cover-2",
+      "description": "Minimalist cover for a sci-fi book",
+      "imageUrl": "https://images.unsplash.com/photo-1704869223921-c0f09b23f18f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxzY2ktZmklMjBib29rfGVufDB8fHx8MTc2Njc0Njc4NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sci-fi book"
+    },
+    {
+      "id": "book-cover-3",
+      "description": "Typographic cover for a classic novel",
+      "imageUrl": "https://images.unsplash.com/photo-1664576844632-3b58f695d63c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjbGFzc2ljJTIwbm92ZWx8ZW58MHx8fHwxNzY2NjczOTA2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "classic novel"
+    },
+    {
+      "id": "book-cover-4",
+      "description": "Photographic cover for a biography",
+      "imageUrl": "https://images.unsplash.com/photo-1587651756806-b7795e183eee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxiaW9ncmFwaHklMjBwaG90b3xlbnwwfHx8fDE3NjY3NzIzODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "biography photo"
+    },
+    {
+      "id": "book-cover-5",
+      "description": "Illustrated cover for a children's book",
+      "imageUrl": "https://images.unsplash.com/photo-1582201957417-cff83bb28164?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaGlsZHJlbiUyMGlsbHVzdHJhdGlvbnxlbnwwfHx8fDE3NjY2ODY1MjB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "children illustration"
+    },
+    {
+      "id": "book-cover-6",
+      "description": "Dark cover for a mystery thriller",
+      "imageUrl": "https://images.unsplash.com/photo-1708095402334-8a18cf0cfc58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxteXN0ZXJ5JTIwdGhyaWxsZXJ8ZW58MHx8fHwxNzY2NzcyMzg4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mystery thriller"
+    },
+    {
+      "id": "avatar-1",
+      "description": "Avatar for a user named Alex",
+      "imageUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjY3NTQyNTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-2",
+      "description": "Avatar for a user named Bella",
+      "imageUrl": "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHNtaWxpbmd8ZW58MHx8fHwxNzY2NzE1MzUxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman smiling"
+    },
+    {
+      "id": "avatar-3",
+      "description": "Avatar for a user named Charlie",
+      "imageUrl": "https://images.unsplash.com/photo-1714356333088-45a9ba618365?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtYW4lMjBnbGFzc2VzfGVufDB8fHx8MTc2NjY2NDkwNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man glasses"
+    },
+    {
+      "id": "shop-logo-1",
+      "description": "Logo for 'The Reader's Corner' bookshop",
+      "imageUrl": "https://images.unsplash.com/photo-1647242093035-3db669fde66b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxib29rc3RvcmUlMjBsb2dvfGVufDB8fHx8MTc2Njc3MjM4OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "bookstore logo"
+    }
+  ]
 }

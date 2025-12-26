@@ -1,0 +1,133 @@
+import Link from 'next/link';
+import { ArrowRight, Book, Heart, Repeat, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { mockBooks, mockSwaps, mockUsers } from '@/lib/placeholder-data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+
+const currentUser = mockUsers[0];
+const userSwaps = mockSwaps.filter(
+  (swap) => swap.ownerId === currentUser.id || swap.requesterId === currentUser.id
+);
+
+const quickLinks = [
+  {
+    href: '/browse',
+    title: 'Browse Books',
+    description: 'Find your next adventure.',
+    icon: Search,
+  },
+  {
+    href: '/my-books',
+    title: 'My Books',
+    description: 'Manage your collection.',
+    icon: Book,
+  },
+  {
+    href: '/wishlist',
+    title: 'My Wishlist',
+    description: 'Track books you desire.',
+    icon: Heart,
+  },
+  {
+    href: '/swaps',
+    title: 'My Swaps',
+    description: 'View your active trades.',
+    icon: Repeat,
+  },
+];
+
+export default function HomePage() {
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className='space-y-1'>
+            <h1 className="font-headline text-3xl font-bold tracking-tight">
+                Welcome back, {currentUser.name}!
+            </h1>
+            <p className='text-muted-foreground'>Here's what's happening with your books today.</p>
+        </div>
+        <Button asChild>
+          <Link href="/browse">
+            Start a New Swap <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {quickLinks.map((link) => (
+          <Card key={link.href} className="flex flex-col hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex-row items-center gap-4 space-y-0 pb-2">
+              <div className="rounded-lg bg-primary/10 p-3">
+                <link.icon className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>{link.title}</CardTitle>
+            </CardHeader>
+            <CardContent className='flex-grow'>
+              <p className="text-sm text-muted-foreground">
+                {link.description}
+              </p>
+            </CardContent>
+            <CardContent>
+               <Button variant="outline" asChild className="w-full">
+                    <Link href={link.href}>Go to {link.title}</Link>
+                </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Swap Activity</CardTitle>
+          <CardDescription>
+            An overview of your recent swap proposals and updates.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {userSwaps.length > 0 ? (
+              userSwaps.slice(0, 3).map((swap) => (
+                <div
+                  key={swap.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div className="flex items-center gap-4">
+                    <Avatar>
+                        <AvatarImage src={currentUser.id === swap.ownerId ? mockUsers.find(u=>u.id === swap.requesterId)?.avatar.imageUrl : mockUsers.find(u=>u.id === swap.ownerId)?.avatar.imageUrl} />
+                        <AvatarFallback>{(currentUser.id === swap.ownerId ? swap.requesterName : swap.ownerName).charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">
+                        Swap with {currentUser.id === swap.ownerId ? swap.requesterName : swap.ownerName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {swap.ownerBookTitle} for {swap.requesterBookTitle}
+                      </p>
+                    </div>
+                  </div>
+                  <div className='text-right'>
+                    <Badge variant={swap.status === 'completed' ? 'default' : 'secondary'} className='capitalize mb-1'>{swap.status}</Badge>
+                    <p className='text-xs text-muted-foreground'>{format(swap.swapDate, 'PPP')}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground">
+                No recent swap activity.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
