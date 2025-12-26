@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { LanguageProvider } from '@/context/language-context';
 
 export const metadata: Metadata = {
   title: 'BookSwap Local',
@@ -23,8 +24,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body bg-background text-foreground antialiased">
-        {children}
-        <Toaster />
+        <LanguageProvider>
+          {children}
+          <Toaster />
+        </LanguageProvider>
       </body>
     </html>
   );

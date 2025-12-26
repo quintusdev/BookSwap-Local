@@ -12,7 +12,8 @@ import {
   Search,
   User,
   LayoutDashboard,
-  Crown
+  Crown,
+  Languages,
 } from 'lucide-react';
 
 import { Logo } from '@/components/logo';
@@ -34,6 +35,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useLanguage } from '@/context/language-context';
 
 // Mock user for demonstration
 const mockUser = {
@@ -46,13 +48,14 @@ const mockUser = {
 export function AppHeader() {
   const pathname = usePathname();
   const [userRole, setUserRole] = useState(mockUser.role); // 'user' or 'shop'
+  const { t, setLanguage } = useLanguage();
 
   const navLinks = [
-    { href: '/home', label: 'Home', icon: Home },
-    { href: '/browse', label: 'Browse', icon: Search },
-    { href: '/my-books', label: 'My Books', icon: Book },
-    { href: '/wishlist', label: 'Wishlist', icon: Heart },
-    { href: '/swaps', label: 'Swaps', icon: Repeat },
+    { href: '/home', label: t('home'), icon: Home },
+    { href: '/browse', label: t('browse'), icon: Search },
+    { href: '/my-books', label: t('my_books'), icon: Book },
+    { href: '/wishlist', label: t('wishlist'), icon: Heart },
+    { href: '/swaps', label: t('swaps'), icon: Repeat },
   ];
 
   const NavLink = ({ href, label, icon: Icon }: (typeof navLinks)[0]) => {
@@ -114,29 +117,47 @@ export function AppHeader() {
         <DropdownMenuItem asChild>
           <Link href="/profile">
             <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
+            <span>{t('profile')}</span>
           </Link>
         </DropdownMenuItem>
         {userRole === 'shop' && (
           <DropdownMenuItem asChild>
             <Link href="/dashboard">
               <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Shop Dashboard</span>
+              <span>{t('shop_dashboard')}</span>
             </Link>
           </DropdownMenuItem>
         )}
          <DropdownMenuItem asChild>
           <Link href="/pricing">
             <Crown className="mr-2 h-4 w-4" />
-            <span>Upgrade</span>
+            <span>{t('upgrade')}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/">
             <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
+            <span>{t('log_out')}</span>
           </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const LanguageSwitcher = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Languages className="h-5 w-5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setLanguage('en')}>
+          English
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setLanguage('it')}>
+          Italiano
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -175,10 +196,10 @@ export function AppHeader() {
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <div className='text-sm text-muted-foreground'>
-            Role: 
-            <select value={userRole} onChange={(e) => setUserRole(e.target.value)} className='ml-1 bg-transparent'>
+            <select value={userRole} onChange={(e) => setUserRole(e.target.value)} className='ml-1 bg-transparent border rounded-md p-1'>
                 <option value="user">User</option>
                 <option value="shop">Shop</option>
             </select>
