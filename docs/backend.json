@@ -37,6 +37,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "rating": {
+          "type": "number",
+          "description": "The user's average rating from swaps."
         }
       },
       "required": [
@@ -170,6 +174,44 @@
         "swapCode",
         "status"
       ]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents a review and rating for a completed swap.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the review."
+        },
+        "swapId": {
+          "type": "string",
+          "description": "Reference to the Swap this review is for."
+        },
+        "reviewerId": {
+          "type": "string",
+          "description": "The UID of the user who wrote the review."
+        },
+        "revieweeId": {
+          "type": "string",
+          "description": "The UID of the user who is being reviewed."
+        },
+        "rating": {
+          "type": "number",
+          "description": "A numerical rating from 1 to 5."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The text content of the review (optional)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the review was created."
+        }
+      },
+      "required": ["id", "swapId", "reviewerId", "revieweeId", "rating", "createdAt"]
     },
     "SwapPass": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -385,6 +427,22 @@
         }
       },
       {
+        "path": "/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Stores reviews for completed swaps. Access is restricted to participants.",
+          "params": [
+            {
+              "name": "reviewId",
+              "description": "The unique identifier for the review."
+            }
+          ]
+        }
+      },
+      {
         "path": "/users/{userId}/swapPasses/{swapPassId}",
         "definition": {
           "entityName": "SwapPass",
@@ -460,3 +518,5 @@
     "reasoning": "The Firestore data structure is designed to support the BookSwap application's core features, emphasizing security, scalability, and ease of debugging.  Authorization Independence is achieved through denormalization where necessary (specifically within Swaps and Chats).  Structural Segregation separates user-owned data (books, wishlists, swap passes) from global data (users, library transactions, chats), simplifying security rules.  Access Modeling utilizes path-based ownership for user data and existence checks for global roles and shared documents (like chats). QAPs are supported by segregating data based on access control needs (private user data vs. public book listings, managed through security rules). The structure facilitates secure `list` operations by avoiding the need for complex filtering within the rules themselves.  This approach makes the rules simpler and more secure. By adhering to the design principles, we can create a maintainable, understandable, and scalable backend for the BookSwap application."
   }
 }
+
+    

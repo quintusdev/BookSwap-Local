@@ -103,15 +103,17 @@ service cloud.firestore {
     /**
      * @description Rules for user profile documents.
      * @path /users/{userId}
-     * @allow A user can get/update their own profile. A superadmin can get/update any profile.
-     * @deny A regular user cannot get/delete another user's profile.
+     * @allow A user can get their own profile. A superadmin can get any profile.
+     * @allow A user can update their own profile. A superadmin can update any profile.
+     * @deny A regular user cannot delete or get another user's profile.
      * @allow A superadmin can list all users.
      * @principle Restricts access to user profiles, with an override for administrators.
      */
     match /users/{userId} {
-      allow get, update, delete: if isOwner(userId) || isSuperAdmin();
+      allow get, update: if isOwner(userId) || isSuperAdmin();
       allow list: if isSuperAdmin();
       allow create: if isOwner(userId) && isCreatingOwnProfile(userId);
+      allow delete: if isSuperAdmin();
     }
 
     /**
@@ -163,6 +165,21 @@ service cloud.firestore {
       allow create: if (isSignedIn() && request.auth.uid == request.resource.data.wishlistOwnerId) || isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
+    
+    /**
+     * @description Rules for review documents.
+     * @path /reviews/{reviewId}
+     * @allow Anyone can read reviews. A participant in the original swap can create a review.
+     * @deny Users cannot update or delete reviews. Superadmin can delete.
+     * @principle Allows public visibility of reviews while restricting creation to relevant users.
+     */
+    match /reviews/{reviewId} {
+        allow get, list: if true;
+        allow create: if isSignedIn() && request.auth.uid == request.resource.data.reviewerId;
+        allow update: if false;
+        allow delete: if isSuperAdmin();
+    }
+
 
     /**
      * @description Rules for transaction records for library partners.
@@ -204,3 +221,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

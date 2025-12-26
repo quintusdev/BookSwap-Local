@@ -103,6 +103,7 @@
   "status_accepted": "Accettato",
   "status_completed": "Completato",
   "status_cancelled": "Annullato",
+  "status_confirmed": "Confermato",
   "my_books_title": "I Miei Libri",
   "my_books_subtitle": "Gestisci i libri che hai reso disponibili per lo scambio.",
   "my_books_add_new_button": "Aggiungi Nuovo Libro",
@@ -164,11 +165,14 @@
   "swaps_subtitle": "Tieni traccia dei tuoi scambi di libri in sospeso, attivi e completati.",
   "swaps_tab_pending": "In attesa",
   "swaps_tab_accepted": "Accettati",
+  "swaps_tab_confirmed": "Confermati",
   "swaps_tab_history": "Cronologia",
   "swaps_pending_title": "Scambi in Sospeso",
   "swaps_pending_desc": "In attesa di risposta da altri utenti.",
   "swaps_accepted_title": "Scambi Accettati",
   "swaps_accepted_desc": "Pronto per il check-in presso una biblioteca partner.",
+  "swaps_confirmed_title": "Scambi Confermati",
+  "swaps_confirmed_desc": "Questi scambi sono pronti per essere completati. Lascia una recensione dopo l'incontro!",
   "swaps_history_title": "Cronologia Scambi",
   "swaps_history_desc": "Il tuo registro degli scambi passati.",
   "swaps_no_swaps_in_category": "Nessun scambio in questa categoria.",
@@ -206,5 +210,18 @@
   "chat_search_placeholder": "Cerca messaggi o utenti...",
   "chat_select_conversation": "Seleziona una conversazione per iniziare a chattare",
   "chat_type_message_placeholder": "Scrivi un messaggio...",
-  "chat_send_button": "Invia"
+  "chat_send_button": "Invia",
+  "swaps_complete_button": "Completa Scambio",
+  "swaps_review_dialog_title": "Come è stato il tuo scambio con",
+  "swaps_review_dialog_desc": "Lascia una valutazione e un commento per aiutare gli altri membri della community.",
+  "swaps_rating_label": "La tua Valutazione",
+  "swaps_comment_label": "Il tuo Commento (opzionale)",
+  "swaps_comment_placeholder": "Raccontaci la tua esperienza...",
+  "swaps_submit_review_button": "Invia Recensione",
+  "swaps_rating_required_title": "Valutazione Richiesta",
+  "swaps_rating_required_desc": "Per favore, seleziona una valutazione prima di inviare.",
+  "swaps_review_submitted_title": "Recensione Inviata",
+  "swaps_review_submitted_desc": "Grazie per il tuo feedback!"
 }
+
+    

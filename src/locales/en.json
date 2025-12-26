@@ -103,6 +103,7 @@
   "status_accepted": "Accepted",
   "status_completed": "Completed",
   "status_cancelled": "Cancelled",
+  "status_confirmed": "Confirmed",
   "my_books_title": "My Books",
   "my_books_subtitle": "Manage the books you've made available for swapping.",
   "my_books_add_new_button": "Add New Book",
@@ -164,11 +165,14 @@
   "swaps_subtitle": "Track your pending, active, and completed book swaps.",
   "swaps_tab_pending": "Pending",
   "swaps_tab_accepted": "Accepted",
+  "swaps_tab_confirmed": "Confirmed",
   "swaps_tab_history": "History",
   "swaps_pending_title": "Pending Swaps",
   "swaps_pending_desc": "Awaiting response from other users.",
   "swaps_accepted_title": "Accepted Swaps",
   "swaps_accepted_desc": "Ready for check-in at a partner library.",
+  "swaps_confirmed_title": "Confirmed Swaps",
+  "swaps_confirmed_desc": "These swaps are ready to be completed. Leave a review after you meet!",
   "swaps_history_title": "Swap History",
   "swaps_history_desc": "Your record of past swaps.",
   "swaps_no_swaps_in_category": "No swaps in this category.",
@@ -206,5 +210,18 @@
   "chat_search_placeholder": "Search messages or users...",
   "chat_select_conversation": "Select a conversation to start chatting",
   "chat_type_message_placeholder": "Type a message...",
-  "chat_send_button": "Send"
+  "chat_send_button": "Send",
+  "swaps_complete_button": "Complete Swap",
+  "swaps_review_dialog_title": "How was your swap with",
+  "swaps_review_dialog_desc": "Leave a rating and a comment to help other members of the community.",
+  "swaps_rating_label": "Your Rating",
+  "swaps_comment_label": "Your Comment (optional)",
+  "swaps_comment_placeholder": "Tell us about your experience...",
+  "swaps_submit_review_button": "Submit Review",
+  "swaps_rating_required_title": "Rating Required",
+  "swaps_rating_required_desc": "Please select a rating before submitting.",
+  "swaps_review_submitted_title": "Review Submitted",
+  "swaps_review_submitted_desc": "Thank you for your feedback!"
 }
+
+    
