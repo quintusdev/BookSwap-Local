@@ -62,9 +62,9 @@
           "type": "string",
           "description": "Unique identifier for the book."
         },
-        "userId": {
+        "ownerId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Book)"
+          "description": "The UID of the user who owns the book."
         },
         "title": {
           "type": "string",
@@ -78,9 +78,21 @@
           "type": "string",
           "description": "ISBN of the book (optional)."
         },
-        "city": {
-          "type": "string",
-          "description": "City where the book is available."
+        "status": {
+            "type": "string",
+            "description": "Availability status of the book.",
+            "enum": ["available", "in-swap", "swapped"]
+        },
+        "location": {
+            "type": "object",
+            "description": "Geospatial information for the book.",
+            "properties": {
+                "lat": { "type": "number" },
+                "lng": { "type": "number" },
+                "city": { "type": "string" },
+                "geohash": { "type": "string", "description": "Geohash for location-based querying." }
+            },
+            "required": ["lat", "lng", "geohash"]
         },
         "imageUrls": {
             "type": "array",
@@ -103,14 +115,23 @@
         "notes": {
             "type": "string",
             "description": "Additional notes or details about the book (optional)."
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "updatedAt": {
+            "type": "string",
+            "format": "date-time"
         }
       },
       "required": [
         "id",
-        "userId",
+        "ownerId",
         "title",
         "author",
-        "city"
+        "status",
+        "location"
       ]
     },
     "WishlistItem": {
@@ -397,23 +418,11 @@
         }
       },
       {
-        "path": "/users/{userId}/books/{bookId}",
+        "path": "/books/{bookId}",
         "definition": {
-          "entityName": "Book",
-          "schema": {
-            "$ref": "#/backend/entities/Book"
-          },
-          "description": "Stores books available for swapping, associated with a specific user. Uses path-based ownership.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "bookId",
-              "description": "The unique identifier for the book."
-            }
-          ]
+            "entityName": "Book",
+            "schema": { "$ref": "#/backend/entities/Book" },
+            "description": "Global collection of all books available for swapping."
         }
       },
       {
@@ -541,6 +550,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the BookSwap application's core features, emphasizing security, scalability, and ease of debugging.  Authorization Independence is achieved through denormalization where necessary (specifically within Swaps and Chats).  Structural Segregation separates user-owned data (books, wishlists, swap passes) from global data (users, library transactions, chats), simplifying security rules.  Access Modeling utilizes path-based ownership for user data and existence checks for global roles and shared documents (like chats). QAPs are supported by segregating data based on access control needs (private user data vs. public book listings, managed through security rules). The structure facilitates secure `list` operations by avoiding the need for complex filtering within the rules themselves.  This approach makes the rules simpler and more secure. By adhering to the design principles, we can create a maintainable, understandable, and scalable backend for the BookSwap application."
+    "reasoning": "The Firestore data structure is designed to support the BookSwap application's core features, emphasizing security, scalability, and ease of debugging. Authorization Independence is achieved through denormalization where necessary (specifically within Swaps and Chats). Structural Segregation separates user-owned data (wishlists, swap passes) from global data (users, books, library transactions, chats), simplifying security rules and enabling global queries like geo-search. Access Modeling utilizes path-based ownership for private user data and existence checks for global roles and shared documents (like chats). The structure facilitates secure `list` operations by avoiding the need for complex filtering within the rules themselves. This approach makes the rules simpler and more secure. By adhering to the design principles, we can create a maintainable, understandable, and scalable backend for the BookSwap application."
   }
 }

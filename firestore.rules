@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated content
  * such as their profile, books, wishlist, and swap passes are stored in subcollections under their
@@ -5,7 +6,7 @@
  * A `superadmin` role is defined, which bypasses most ownership checks for administrative purposes.
  *
  * Data Structure: User-specific data is hierarchically organized under `/users/{userId}`. Shared or
- * transactional data, like `/swaps`, `/chats`, and `/libraryTransactions`, are placed in top-level collections.
+ * transactional data, like `/books`, `/swaps`, `/chats`, and `/libraryTransactions`, are placed in top-level collections.
  * This structural segregation simplifies security rules and improves query performance.
  *
  * Key Security Decisions:
@@ -21,9 +22,6 @@
  * the UIDs of all participants (e.g., `bookOwnerId`, `wishlistOwnerId` in `/swaps`, or a `users` array in `/chats`).
  * This avoids slow and costly cross-collection `get()` calls during rule evaluation and is essential for securing shared data.
  *
- * Structural Segregation: User data is kept in private subcollections (`/users/{userId}/books`),
- * which is more secure and performant for listing a user's own items than a single global collection
- * with a 'userId' field.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -99,15 +97,13 @@ service cloud.firestore {
       return request.resource.data.id == resource.data.id || isSuperAdmin();
     }
 
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
 
     /**
      * @description Rules for user profile documents.
      * @path /users/{userId}
-     * @allow A user can get their own profile. A superadmin can get any profile.
-     * @allow A user can update their own profile. A superadmin can update any profile.
-     * @deny A regular user cannot delete or get another user's profile.
-     * @allow A superadmin can list all users.
-     * @principle Restricts access to user profiles, with an override for administrators.
      */
     match /users/{userId} {
       allow get, update: if isOwner(userId) || isSuperAdmin();
@@ -117,23 +113,23 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for a user's collection of books.
-     * @path /users/{userId}/books/{bookId}
-     * @allow A user can manage books in their own collection. A superadmin can manage any book.
-     * @deny A regular user cannot access books in another user's collection.
-     * @principle Enforces data ownership with an admin override.
+     * @description Rules for the global books collection.
+     * @path /books/{bookId}
+     * @allow Authenticated users can read any book.
+     * @allow A user can create a book and write to books they own. A superadmin can write to any book.
+     * @deny Anonymous users cannot read. Users cannot write to books they don't own.
+     * @principle Enables a global browse experience while restricting modifications to the owner.
      */
-    match /users/{userId}/books/{bookId} {
-      allow read, write: if isOwner(userId) || isSuperAdmin();
-      allow create: if (isOwner(userId) && isCreatingOwnSubdocument(userId)) || isSuperAdmin();
+    match /books/{bookId} {
+        allow read: if isSignedIn();
+        allow create: if isOwner(request.resource.data.ownerId) || isSuperAdmin();
+        allow update, delete: if isOwner(resource.data.ownerId) || isSuperAdmin();
     }
+
 
     /**
      * @description Rules for a user's personal wishlist.
      * @path /users/{userId}/wishlist/{wishlistItemId}
-     * @allow A user can manage their own wishlist. A superadmin can manage any wishlist.
-     * @deny A regular user cannot access another user's wishlist.
-     * @principle Secures private wishlists with an admin override.
      */
     match /users/{userId}/wishlist/{wishlistItemId} {
       allow read, write: if isOwner(userId) || isSuperAdmin();
@@ -143,9 +139,6 @@ service cloud.firestore {
     /**
      * @description Rules for a user's swap pass subscriptions.
      * @path /users/{userId}/swapPasses/{swapPassId}
-     * @allow A user can manage their own swap passes. A superadmin can manage any swap pass.
-     * @deny A regular user cannot access another user's swap passes.
-     * @principle Protects sensitive subscription data with an admin override.
      */
     match /users/{userId}/swapPasses/{swapPassId} {
       allow read, write: if isOwner(userId) || isSuperAdmin();
@@ -155,9 +148,6 @@ service cloud.firestore {
     /**
      * @description Rules for swap transaction documents.
      * @path /swaps/{swapId}
-     * @allow A participant can read/update their swap. A superadmin has full access.
-     * @deny Anonymous or non-participant access is denied. The collection is not listable for regular users.
-     * @principle Enforces shared access for collaborators and full access for admins.
      */
     match /swaps/{swapId} {
       allow get, update: if (isSignedIn() && request.auth.uid in resource.data.participantIds) || isSuperAdmin();
@@ -169,9 +159,6 @@ service cloud.firestore {
     /**
      * @description Rules for review documents.
      * @path /reviews/{reviewId}
-     * @allow Anyone can read reviews. A participant in the original swap can create a review.
-     * @deny Users cannot update or delete reviews. Superadmin can delete.
-     * @principle Allows public visibility of reviews while restricting creation to relevant users.
      */
     match /reviews/{reviewId} {
         allow get, list: if true;
@@ -180,13 +167,9 @@ service cloud.firestore {
         allow delete: if isSuperAdmin();
     }
 
-
     /**
      * @description Rules for transaction records for library partners.
      * @path /libraryTransactions/{libraryTransactionId}
-     * @allow A library owner can manage their own transactions. A superadmin has full access.
-     * @deny A library owner cannot access another library's transactions. Collection is not listable for regular users.
-     * @principle Secures business-sensitive data with an admin override.
      */
     match /libraryTransactions/{libraryTransactionId} {
       allow read, write: if (isSignedIn() && resource.data.libraryId == request.auth.uid) || isSuperAdmin();
@@ -197,9 +180,6 @@ service cloud.firestore {
     /**
      * @description Rules for chat documents.
      * @path /chats/{chatId}
-     * @allow A participant in the chat can read and update it (e.g., last message).
-     * @deny Collection is not listable for anyone except superadmin.
-     * @principle Enforces that only chat members can access chat metadata.
      */
     match /chats/{chatId} {
       allow get, update, create: if isSignedIn() && request.auth.uid in resource.data.users;
@@ -208,9 +188,6 @@ service cloud.firestore {
        /**
        * @description Rules for messages within a chat.
        * @path /chats/{chatId}/messages/{messageId}
-       * @allow A participant can read all messages and create new ones.
-       * @deny Messages cannot be updated or deleted by users. Superadmin can delete.
-       * @principle Allows free-flowing conversation for participants while maintaining message integrity.
        */
       match /messages/{messageId} {
         allow list, get: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
@@ -221,5 +198,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

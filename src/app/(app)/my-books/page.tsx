@@ -32,7 +32,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/context/language-context';
 import { useUser, useFirestore, useCollection, addDocumentNonBlocking, deleteDocumentNonBlocking, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -41,6 +41,7 @@ import { useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { generateGeohash } from '@/lib/geo-utils';
 
 const bookSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -57,10 +58,9 @@ type Book = {
   title: string;
   author: string;
   isbn?: string;
-  city: string;
   status: 'available' | 'in-swap' | 'swapped';
   imageUrls: string[];
-  userId: string;
+  ownerId: string;
   condition?: 'new' | 'like_new' | 'good' | 'fair' | 'poor';
 }
 
@@ -77,9 +77,13 @@ export default function MyBooksPage() {
     const { user } = useUser();
     const firestore = useFirestore();
 
+    // Querying the global 'books' collection for books owned by the current user.
     const booksCollectionRef = useMemoFirebase(() => {
         if (!user) return null;
-        return collection(firestore, 'users', user.uid, 'books');
+        // This query is illustrative. For performance, you might not want to query the entire
+        // global collection on the client. A backend function or more specific query is better.
+        // For this example, we proceed.
+        return query(collection(firestore, 'books'), where('ownerId', '==', user.uid));
     }, [firestore, user]);
 
     const { data: userBooks, isLoading } = useCollection<Book>(booksCollectionRef);
@@ -168,22 +172,35 @@ function AddBookDialog() {
     async function onSubmit(values: z.infer<typeof bookSchema>) {
         if (!user) return;
 
-        const booksCollection = collection(firestore, 'users', user.uid, 'books');
+        const booksCollection = collection(firestore, 'books');
         
-        // In a real app, we'd get user's city from their profile
-        const userCity = 'New York'; 
+        // In a real app, you'd get the user's location from their profile or GPS.
+        // For now, we'll use a mock location for New York.
+        const userLat = 40.7128;
+        const userLng = -74.0060;
+        const userCity = 'New York';
         
         // Simulate multiple image uploads
         const imageUrls = Array.from({ length: 3 }, (_, i) => 
             `https://picsum.photos/seed/book${Math.random() * 1000}/${200 + i*10}/${300 + i*10}`
         );
+        
+        const newBookRef = doc(booksCollection);
 
         addDocumentNonBlocking(booksCollection, {
-            ...values,
-            userId: user.uid,
-            city: userCity,
+            id: newBookRef.id,
+            ownerId: user.uid,
             status: 'available',
-            imageUrls: imageUrls
+            ...values,
+            location: {
+                lat: userLat,
+                lng: userLng,
+                city: userCity,
+                geohash: generateGeohash(userLat, userLng),
+            },
+            imageUrls: imageUrls,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
         });
 
         form.reset();
@@ -300,7 +317,7 @@ function BookActions({ bookId }: { bookId: string }) {
 
     const handleDelete = () => {
         if (!user) return;
-        const bookRef = doc(firestore, 'users', user.uid, 'books', bookId);
+        const bookRef = doc(firestore, 'books', bookId);
         deleteDocumentNonBlocking(bookRef);
     }
 
@@ -323,5 +340,3 @@ function BookActions({ bookId }: { bookId: string }) {
         </DropdownMenu>
     )
 }
-
-    
