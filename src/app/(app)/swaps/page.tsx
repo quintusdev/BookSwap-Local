@@ -115,13 +115,13 @@ function SwapCard({ swap }: { swap: typeof mockSwaps[0] }) {
             
             <div className="flex items-center justify-around text-center">
                 <div className="flex flex-col items-center gap-2">
-                    <Image src={myBook?.coverImage.imageUrl || ''} alt={myBook?.title || ''} width={60} height={90} className="rounded-md object-cover" />
+                    {myBook?.coverImage.imageUrl && <Image src={myBook.coverImage.imageUrl} alt={myBook.title || ''} width={60} height={90} className="rounded-md object-cover" />}
                     <p className="text-xs font-semibold max-w-[100px] truncate">{myBook?.title}</p>
                     <p className="text-xs text-muted-foreground">{t('swaps_you_give')}</p>
                 </div>
                 <ArrowRight className="h-6 w-6 text-muted-foreground mx-4" />
                  <div className="flex flex-col items-center gap-2">
-                    <Image src={theirBook?.coverImage.imageUrl || ''} alt={theirBook?.title || ''} width={60} height={90} className="rounded-md object-cover" />
+                    {theirBook?.coverImage.imageUrl && <Image src={theirBook.coverImage.imageUrl} alt={theirBook.title || ''} width={60} height={90} className="rounded-md object-cover" />}
                     <p className="text-xs font-semibold max-w-[100px] truncate">{theirBook?.title}</p>
                     <p className="text-xs text-muted-foreground">{t('swaps_you_get')}</p>
                 </div>
