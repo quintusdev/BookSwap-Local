@@ -185,5 +185,19 @@
   "wishlist_empty_desc": "Add a book you'd like to read.",
   "wishlist_dialog_title": "Add to Wishlist",
   "wishlist_dialog_desc": "What book are you dreaming of reading next?",
-  "wishlist_actions_remove": "Remove"
+  "wishlist_actions_remove": "Remove",
+  "signup_change_avatar": "Change Avatar",
+  "signup_favorite_genres_label": "Favorite Genres (up to 5)",
+  "genres_selected": "genres selected",
+  "signup_select_genres_placeholder": "Select up to 5 genres...",
+  "profile_genres_title": "Favorite Genres",
+  "profile_genres_desc": "Manage your favorite book genres to get better recommendations.",
+  "profile_genres_add_button": "Add a genre...",
+  "profile_genres_limit_reached": "Genre limit reached",
+  "profile_genres_search_placeholder": "Search for a genre...",
+  "profile_genres_not_found": "No genre found.",
+  "profile_genres_limit_error": "You can select a maximum of 5 genres.",
+  "profile_genres_save_success": "Favorite genres updated!",
+  "home_suggested_books_title": "Suggested for You",
+  "home_suggested_books_desc": "Based on your favorite genres, you might like these:"
 }

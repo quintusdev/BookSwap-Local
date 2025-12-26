@@ -185,5 +185,19 @@
   "wishlist_empty_desc": "Aggiungi un libro che vorresti leggere.",
   "wishlist_dialog_title": "Aggiungi alla Lista Desideri",
   "wishlist_dialog_desc": "Quale libro sogni di leggere prossimamente?",
-  "wishlist_actions_remove": "Rimuovi"
+  "wishlist_actions_remove": "Rimuovi",
+  "signup_change_avatar": "Cambia Avatar",
+  "signup_favorite_genres_label": "Generi Preferiti (fino a 5)",
+  "genres_selected": "generi selezionati",
+  "signup_select_genres_placeholder": "Seleziona fino a 5 generi...",
+  "profile_genres_title": "Generi Preferiti",
+  "profile_genres_desc": "Gestisci i tuoi generi di libri preferiti per ottenere consigli migliori.",
+  "profile_genres_add_button": "Aggiungi un genere...",
+  "profile_genres_limit_reached": "Limite generi raggiunto",
+  "profile_genres_search_placeholder": "Cerca un genere...",
+  "profile_genres_not_found": "Nessun genere trovato.",
+  "profile_genres_limit_error": "Puoi selezionare un massimo di 5 generi.",
+  "profile_genres_save_success": "Generi preferiti aggiornati!",
+  "home_suggested_books_title": "Consigliati per Te",
+  "home_suggested_books_desc": "In base ai tuoi generi preferiti, potrebbero piacerti questi:"
 }

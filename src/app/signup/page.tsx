@@ -32,6 +32,12 @@ import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { bookGenres } from '@/lib/placeholder-data';
+import { Badge } from '@/components/ui/badge';
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: 'First name is required' }),
@@ -39,6 +45,8 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
   role: z.enum(['reader', 'library']),
+  avatarFile: z.instanceof(File).optional(),
+  favoriteGenres: z.array(z.string()).max(5, "You can select up to 5 genres.").optional(),
 });
 
 export default function SignupPage() {
@@ -49,6 +57,7 @@ export default function SignupPage() {
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,6 +67,7 @@ export default function SignupPage() {
       email: '',
       password: '',
       role: 'reader',
+      favoriteGenres: [],
     },
   });
 
@@ -68,6 +78,9 @@ export default function SignupPage() {
       const newUser = userCredential.user;
       
       if (newUser) {
+        // In a real app, you would upload the avatarFile to Firebase Storage and get the URL
+        const avatarUrl = avatarPreview || `https://avatar.vercel.sh/${newUser.email}.png`;
+
         const userRef = doc(firestore, 'users', newUser.uid);
         await setDocumentNonBlocking(userRef, {
             id: newUser.uid,
@@ -76,7 +89,8 @@ export default function SignupPage() {
             role: values.role,
             city: 'Not set',
             subscription: 'Free',
-            avatarUrl: `https://avatar.vercel.sh/${newUser.email}.png`,
+            avatarUrl: avatarUrl,
+            favoriteGenres: values.favoriteGenres || [],
         }, { merge: true });
         router.push('/home');
       }
@@ -98,6 +112,18 @@ export default function SignupPage() {
     }
   }, [user, isUserLoading, router]);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      form.setValue('avatarFile', file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (isUserLoading || user) {
     return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
   }
@@ -107,7 +133,7 @@ export default function SignupPage() {
       <div className="mb-8">
         <Logo />
       </div>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">{t('signup_title')}</CardTitle>
           <CardDescription>{t('signup_subtitle')}</CardDescription>
@@ -115,6 +141,30 @@ export default function SignupPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+              <FormField
+                control={form.control}
+                name="avatarFile"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col items-center">
+                    <FormLabel htmlFor="avatar-upload">
+                      <div className="relative h-24 w-24 rounded-full cursor-pointer group">
+                        <img
+                          src={avatarPreview || `https://avatar.vercel.sh/placeholder.png`}
+                          alt="Avatar preview"
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-white text-xs text-center">{t('signup_change_avatar')}</span>
+                        </div>
+                      </div>
+                    </FormLabel>
+                    <FormControl>
+                        <Input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" disabled={isSubmitting}/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -169,6 +219,19 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
+
+            <FormField
+                control={form.control}
+                name="favoriteGenres"
+                render={({ field }) => (
+                    <FormItem className='flex flex-col'>
+                        <FormLabel>{t('signup_favorite_genres_label')}</FormLabel>
+                        <GenrePicker field={field} />
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
               <FormField
                 control={form.control}
                 name="role"
@@ -215,4 +278,71 @@ export default function SignupPage() {
       </Card>
     </div>
   );
+}
+
+
+function GenrePicker({ field }: { field: any }) {
+  const [open, setOpen] = useState(false)
+  const { t } = useLanguage()
+
+  const handleSelect = (currentValue: string) => {
+    const newValue = field.value?.includes(currentValue)
+      ? field.value?.filter((v: string) => v !== currentValue)
+      : [...(field.value || []), currentValue]
+    
+    if (newValue.length > 5) {
+        // toast or message
+        return;
+    }
+    field.onChange(newValue)
+  }
+
+  return (
+    <>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+          disabled={field.value?.length >= 5}
+        >
+          {field.value?.length > 0 ? `${field.value.length} ${t('genres_selected')}` : t('signup_select_genres_placeholder')}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+        <Command>
+          <CommandInput placeholder={t('profile_genres_search_placeholder')} />
+          <CommandEmpty>{t('profile_genres_not_found')}</CommandEmpty>
+          <CommandGroup>
+            {bookGenres.map((genre) => (
+              <CommandItem
+                key={genre}
+                onSelect={handleSelect}
+                value={genre}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    field.value?.includes(genre) ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {genre}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
+    <div className="flex flex-wrap gap-1 mt-2">
+        {field.value?.map((genre: string) => (
+            <Badge key={genre} variant="secondary">
+                {genre}
+            </Badge>
+        ))}
+    </div>
+    </>
+  )
 }

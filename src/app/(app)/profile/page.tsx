@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,6 +31,13 @@ import { useLanguage } from '@/context/language-context';
 import { useUser, useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { bookGenres } from '@/lib/placeholder-data';
+import { Badge } from '@/components/ui/badge';
+
 
 type UserProfile = {
     id: string;
@@ -39,6 +46,7 @@ type UserProfile = {
     city: string;
     subscription: string;
     avatarUrl: string;
+    favoriteGenres?: string[];
 }
 
 const profileSchema = z.object({
@@ -164,6 +172,9 @@ export default function ProfilePage() {
                     </form>
                 </Form>
             </Card>
+            
+            <GenreManager userProfile={userProfile} userDocRef={userDocRef} />
+
 
              <Card className='mt-8'>
                 <CardHeader>
@@ -216,5 +227,102 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+function GenreManager({ userProfile, userDocRef }: { userProfile: UserProfile, userDocRef: any }) {
+    const { t } = useLanguage();
+    const [selectedGenres, setSelectedGenres] = useState<string[]>(userProfile.favoriteGenres || []);
+    const { toast } = useToast();
+
+    const handleGenreToggle = (genre: string) => {
+        const newSelected = selectedGenres.includes(genre)
+            ? selectedGenres.filter(g => g !== genre)
+            : [...selectedGenres, genre];
+        
+        if (newSelected.length > 5) {
+            toast({ variant: 'destructive', title: t('profile_genres_limit_error') });
+            return;
+        }
+        setSelectedGenres(newSelected);
+    }
+
+    const handleSave = () => {
+        setDocumentNonBlocking(userDocRef, { favoriteGenres: selectedGenres }, { merge: true });
+        toast({ title: t('profile_genres_save_success') });
+    }
+
+    return (
+        <Card className="mt-8">
+            <CardHeader>
+                <CardTitle>{t('profile_genres_title')}</CardTitle>
+                <CardDescription>{t('profile_genres_desc')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-wrap gap-2">
+                    {selectedGenres.map(genre => (
+                        <Badge key={genre} variant="secondary" className="text-base">
+                            {genre}
+                            <button onClick={() => handleGenreToggle(genre)} className="ml-2">
+                                <X className="h-4 w-4" />
+                            </button>
+                        </Badge>
+                    ))}
+                </div>
+                 <GenrePicker selectedGenres={selectedGenres} onGenreToggle={handleGenreToggle} />
+
+            </CardContent>
+             <CardFooter className='border-t pt-6'>
+                <Button onClick={handleSave}>{t('profile_info_save_button')}</Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
+function GenrePicker({ selectedGenres, onGenreToggle }: { selectedGenres: string[], onGenreToggle: (genre: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const { t } = useLanguage();
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between mt-4"
+          disabled={selectedGenres.length >= 5}
+        >
+          {selectedGenres.length < 5 ? t('profile_genres_add_button') : t('profile_genres_limit_reached')}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+        <Command>
+          <CommandInput placeholder={t('profile_genres_search_placeholder')} />
+          <CommandEmpty>{t('profile_genres_not_found')}</CommandEmpty>
+          <CommandGroup>
+            {bookGenres.map((genre) => (
+              <CommandItem
+                key={genre}
+                onSelect={() => {
+                  onGenreToggle(genre);
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    selectedGenres.includes(genre) ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {genre}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

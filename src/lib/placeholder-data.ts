@@ -11,6 +11,7 @@ type Book = {
   ownerName: string;
   status: 'available' | 'in-swap' | 'swapped';
   coverImage: ImagePlaceholder;
+  genre: string;
 };
 
 type User = {
@@ -47,6 +48,18 @@ type PricingTier = {
   features: string[];
   isFeatured: boolean;
 };
+
+export const bookGenres = [
+    "Fantasy",
+    "Science Fiction",
+    "Mystery",
+    "Thriller",
+    "Romance",
+    "Historical Fiction",
+    "Horror",
+    "Biography",
+    "Non-fiction"
+];
 
 export const mockUsers: User[] = [
   {
@@ -111,6 +124,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Alice',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-1')!,
+    genre: 'Historical Fiction',
   },
   {
     id: 'book-2',
@@ -121,6 +135,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Alice',
     status: 'in-swap',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-2')!,
+    genre: 'Historical Fiction',
   },
   {
     id: 'book-3',
@@ -131,6 +146,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Bob',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-3')!,
+    genre: 'Science Fiction',
   },
   {
     id: 'book-4',
@@ -141,6 +157,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Charlie',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-4')!,
+    genre: 'Romance',
   },
   {
     id: 'book-5',
@@ -151,6 +168,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Diana',
     status: 'swapped',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-5')!,
+    genre: 'Fantasy',
   },
   {
     id: 'book-6',
@@ -161,6 +179,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Bob',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-6')!,
+    genre: 'Science Fiction',
   },
   {
     id: 'book-7',
@@ -171,6 +190,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Diana',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-1')!,
+    genre: 'Historical Fiction',
   },
   {
     id: 'book-8',
@@ -181,6 +201,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Charlie',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-3')!,
+    genre: 'Historical Fiction',
   },
   {
     id: 'book-9',
@@ -191,6 +212,7 @@ export const mockBooks: Book[] = [
     ownerName: 'Bob',
     status: 'in-swap',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-4')!,
+    genre: 'Fantasy',
   },
   {
     id: 'book-10',
@@ -201,10 +223,11 @@ export const mockBooks: Book[] = [
     ownerName: 'Alice',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-5')!,
+    genre: 'Fantasy',
   },
 ];
 
-export const mockWishlist: Omit<Book, 'ownerId' | 'ownerName' | 'status' | 'city'>[] = [
+export const mockWishlist: Omit<Book, 'ownerId' | 'ownerName' | 'status' | 'city' | 'genre'>[] = [
   {
     id: 'wish-1',
     title: 'Dune',

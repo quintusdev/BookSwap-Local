@@ -15,18 +15,34 @@
           "description": "User's email address.",
           "format": "email"
         },
+        "name": {
+          "type": "string",
+          "description": "User's full name."
+        },
         "role": {
           "type": "string",
-          "description": "Role of the user (user or shop)."
+          "description": "Role of the user (reader, library, or superadmin)."
         },
         "city": {
           "type": "string",
           "description": "City where the user is located."
+        },
+        "avatarUrl": {
+            "type": "string",
+            "description": "URL of the user's profile picture."
+        },
+        "favoriteGenres": {
+            "type": "array",
+            "description": "A list of the user's favorite book genres.",
+            "items": {
+                "type": "string"
+            }
         }
       },
       "required": [
         "id",
         "email",
+        "name",
         "role",
         "city"
       ]

@@ -16,6 +16,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { useLanguage } from '@/context/language-context';
+import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { BookCard } from '@/components/book-card';
+
+type UserProfile = {
+    name?: string;
+    favoriteGenres?: string[];
+}
 
 const currentUser = mockUsers[0];
 const userSwaps = mockSwaps.filter(
@@ -24,6 +32,18 @@ const userSwaps = mockSwaps.filter(
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userDocRef);
+
+  const suggestedBooks = mockBooks.filter(book => userProfile?.favoriteGenres?.includes(book.genre) && book.status === 'available');
+
 
   const quickLinks = [
     {
@@ -57,7 +77,7 @@ export default function HomePage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className='space-y-1'>
             <h1 className="font-headline text-3xl font-bold tracking-tight">
-                {t('home_welcome')}, {currentUser.name}!
+                {t('home_welcome')}, {userProfile?.name || user?.email}!
             </h1>
             <p className='text-muted-foreground'>{t('home_subtitle')}</p>
         </div>
@@ -90,6 +110,21 @@ export default function HomePage() {
           </Card>
         ))}
       </div>
+
+       {suggestedBooks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('home_suggested_books_title')}</CardTitle>
+            <CardDescription>{t('home_suggested_books_desc')}</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+            {suggestedBooks.slice(0, 5).map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader>
