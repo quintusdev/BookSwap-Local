@@ -222,7 +222,7 @@ function SwapCard({ swap }: { swap: Swap }) {
                         {formatDistanceToNow(swap.createdAt.toDate(), { addSuffix: true })}
                     </p>}
                 </div>
-                <Badge className={`${statusConfig[swap.status]?.color} text-white`}>{t(`status_${swap.status}`)}</Badge>
+                <Badge className={cn('text-white', statusConfig[swap.status]?.color)}>{t(`status_${swap.status}`)}</Badge>
             </div>
             
             <div className="flex items-center justify-around text-center">
@@ -250,10 +250,14 @@ function SwapCard({ swap }: { swap: Swap }) {
                         <div className='bg-background border-2 border-dashed border-primary/50 rounded-lg p-3 mt-2 inline-block'>
                             <p className='font-mono text-3xl font-bold text-primary tracking-widest'>{swap.swapCode}</p>
                         </div>
-                         <CompleteSwapDialog swap={swap} otherUser={otherUser} />
                     </CardContent>
                 </Card>
             )}
+
+             {swap.status === 'accepted' && (
+                <CompleteSwapDialog swap={swap} otherUser={otherUser} />
+            )}
+
              {swap.status === 'pending' && isBookOwner && (
                  <div className='flex gap-2 pt-2'>
                     <Button className='w-full bg-accent hover:bg-accent/90' onClick={handleAccept}>{t('swaps_accept_button')}</Button>
@@ -303,10 +307,7 @@ function CompleteSwapDialog({ swap, otherUser }: { swap: Swap, otherUser: { id: 
         });
 
         // 3. Update user's average rating (this is a simplified approach)
-        // A more robust solution would use a Cloud Function to calculate the average
         const userRef = doc(firestore, 'users', otherUser.id);
-        // For simplicity, we just set the rating, but ideally you'd average it.
-        // This is a placeholder for a more complex aggregation logic.
         const userDoc = await getDocument(userRef);
         const userData = userDoc.data();
         const currentRating = userData?.rating || 0;
@@ -375,5 +376,3 @@ function CompleteSwapDialog({ swap, otherUser }: { swap: Swap, otherUser: { id: 
         </Dialog>
     )
 }
-
-    
