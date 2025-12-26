@@ -71,6 +71,16 @@
             "type": "string",
             "format": "date-time",
             "description": "Timestamp for when the user accepted the privacy policy."
+        },
+        "localCounters": {
+          "type": "object",
+          "description": "Map tracking user's swap count at specific locations. { locationId: count }.",
+          "additionalProperties": { "type": "number" }
+        },
+        "hubBadges": {
+            "type": "array",
+            "description": "Badges earned by the user at specific hubs.",
+            "items": { "type": "string" }
         }
       },
       "required": [
@@ -80,6 +90,31 @@
         "role",
         "city"
       ]
+    },
+    "Location": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Location",
+        "type": "object",
+        "description": "Represents an intermediary location (BookSwap Hub).",
+        "properties": {
+            "id": { "type": "string", "description": "Unique identifier, same as the owner's UID." },
+            "ownerId": { "type": "string", "description": "The UID of the professional user who owns this location." },
+            "name": { "type": "string" },
+            "address": { "type": "string" },
+            "city": { "type": "string" },
+            "location": {
+                "type": "object",
+                "properties": {
+                    "lat": { "type": "number" },
+                    "lng": { "type": "number" }
+                }
+            },
+            "totalSwaps": { "type": "number", "description": "Total verified swaps at this location." },
+            "monthlySwaps": { "type": "number", "description": "Verified swaps in the current month." },
+            "currentMilestone": { "type": "string", "description": "The latest milestone achieved." },
+            "qrCodeUrl": { "type": "string", "description": "URL to the static QR code image." }
+        },
+        "required": ["id", "ownerId", "name", "address", "city"]
     },
     "Book": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -235,6 +270,14 @@
         "status": {
           "type": "string",
           "description": "Status of the swap (e.g., pending, accepted, completed, cancelled)."
+        },
+        "locationId": {
+            "type": "string",
+            "description": "ID of the location where the swap was physically confirmed."
+        },
+        "locationName": {
+            "type": "string",
+            "description": "Name of the location (denormalized)."
         }
       },
       "required": [
@@ -444,6 +487,14 @@
               "description": "The unique identifier for the user."
             }
           ]
+        }
+      },
+      {
+        "path": "/locations/{locationId}",
+        "definition": {
+            "entityName": "Location",
+            "schema": { "$ref": "#/backend/entities/Location" },
+            "description": "Stores data for intermediary locations (BookSwap Hubs)."
         }
       },
       {

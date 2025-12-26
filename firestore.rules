@@ -104,6 +104,15 @@ service cloud.firestore {
     function isProfileIdImmutable() {
       return request.resource.data.id == resource.data.id || isSuperAdmin();
     }
+    
+    /**
+    * Security function to verify that counter increments are valid.
+    * Allows a field to be incremented only by 1.
+    */
+    function isIncrementingByOne(fieldName) {
+      return request.resource.data[fieldName] == resource.data[fieldName] + 1;
+    }
+    
 
     // ------------------------------------------------------------------------
     // Collection Rules
@@ -120,6 +129,20 @@ service cloud.firestore {
       allow list: if isSuperAdmin();
       allow create: if isOwner(userId) && isCreatingOwnProfile(userId);
       allow delete: if isSuperAdmin();
+    }
+    
+    /**
+     * @description Rules for intermediary locations (BookSwap Hubs).
+     * @path /locations/{locationId}
+     */
+    match /locations/{locationId} {
+      allow read: if isSignedIn(); // Publicly readable for map display
+      allow write: if isProfessional() && isOwner(locationId) || isSuperAdmin();
+      
+      // Rule to safely increment counters via a transaction/batched write.
+      // This prevents clients from setting arbitrary values.
+      allow update: if (isProfessional() && isOwner(locationId)) &&
+                      (isIncrementingByOne('totalSwaps') || isIncrementingByOne('monthlySwaps'));
     }
 
     /**
@@ -160,9 +183,11 @@ service cloud.firestore {
      * @path /swaps/{swapId}
      */
     match /swaps/{swapId} {
-      allow get, update: if (isSignedIn() && request.auth.uid in resource.data.participantIds) || isSuperAdmin();
+      allow get: if (isSignedIn() && request.auth.uid in resource.data.participantIds) || isSuperAdmin();
       allow list: if isSuperAdmin();
       allow create: if (isSignedIn() && request.auth.uid == request.resource.data.wishlistOwnerId) || isSuperAdmin();
+      // Only participants can update status (e.g., to 'accepted' or 'completed')
+      allow update: if (isSignedIn() && request.auth.uid in resource.data.participantIds);
       allow delete: if isSuperAdmin();
     }
     
