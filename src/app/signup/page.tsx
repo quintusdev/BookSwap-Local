@@ -27,10 +27,11 @@ import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/logo';
 import { useLanguage } from '@/context/language-context';
 import { useAuth, useUser, setDocumentNonBlocking } from '@/firebase';
-import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: 'First name is required' }),
@@ -46,6 +47,8 @@ export default function SignupPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,33 +62,43 @@ export default function SignupPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
     try {
-      await initiateEmailSignUp(auth, values.email, values.password);
-      // We can't get the user immediately, so we'll rely on the onAuthStateChanged listener
-      // and a useEffect to create the user document.
-    } catch (error) {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const newUser = userCredential.user;
+      
+      if (newUser) {
+        const userRef = doc(firestore, 'users', newUser.uid);
+        await setDocumentNonBlocking(userRef, {
+            id: newUser.uid,
+            email: newUser.email,
+            name: `${values.firstName} ${values.lastName}`,
+            role: values.role,
+            city: 'Not set',
+            subscription: 'Free',
+            avatarUrl: `https://avatar.vercel.sh/${newUser.email}.png`,
+        }, { merge: true });
+        router.push('/home');
+      }
+    } catch (error: any) {
       console.error('Error signing up:', error);
-      // Handle signup errors, e.g., show a toast notification
+      toast({
+        variant: "destructive",
+        title: "Signup Failed",
+        description: error.message || "An unexpected error occurred."
+      });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
-   useEffect(() => {
-    if (user) {
-      const { values } = form.getValues();
-      const userRef = doc(firestore, 'users', user.uid);
-      setDocumentNonBlocking(userRef, {
-        id: user.uid,
-        email: user.email,
-        name: `${values.firstName} ${values.lastName}`,
-        role: values.role,
-        city: 'Not set', // Default value
-      }, { merge: true });
+  useEffect(() => {
+    if (!isUserLoading && user) {
       router.push('/home');
     }
-  }, [user, firestore, form, router]);
+  }, [user, isUserLoading, router]);
 
-
-  if (isUserLoading) {
+  if (isUserLoading || user) {
     return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
   }
   
@@ -110,7 +123,7 @@ export default function SignupPage() {
                     <FormItem>
                       <FormLabel>{t('signup_first_name_label')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Max" {...field} />
+                        <Input placeholder="Max" {...field} disabled={isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -123,7 +136,7 @@ export default function SignupPage() {
                     <FormItem>
                       <FormLabel>{t('signup_last_name_label')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Robinson" {...field} />
+                        <Input placeholder="Robinson" {...field} disabled={isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -137,7 +150,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>{t('email_label')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="m@example.com" {...field} />
+                      <Input placeholder="m@example.com" {...field} disabled={isSubmitting} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,7 +163,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>{t('password_label')}</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" {...field} disabled={isSubmitting}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -167,6 +180,7 @@ export default function SignupPage() {
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                         className="flex gap-4 pt-1"
+                        disabled={isSubmitting}
                       >
                         <FormItem className="flex items-center space-x-2">
                           <FormControl>
@@ -186,8 +200,8 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-                {t('signup_create_account_button')}
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isSubmitting}>
+                {isSubmitting ? t('signup_creating_account_button') : t('signup_create_account_button')}
               </Button>
             </form>
           </Form>

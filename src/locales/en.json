@@ -47,6 +47,7 @@
   "signup_reader_option": "Reader",
   "signup_library_option": "Library",
   "signup_create_account_button": "Create an account",
+  "signup_creating_account_button": "Creating Account...",
   "signup_already_have_account_prompt": "Already have an account?",
   "footer_rights_reserved": "All Rights Reserved.",
   "footer_terms": "Terms of Service",

@@ -34,9 +34,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/language-context';
-import { useAuth, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useAuth, useUser, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
@@ -46,7 +46,7 @@ type UserProfile = {
   name?: string;
   email?: string;
   avatarUrl?: string;
-  role?: 'user' | 'shop';
+  role?: 'reader' | 'shop' | 'superadmin';
 }
 
 export function AppHeader() {
@@ -63,8 +63,21 @@ export function AppHeader() {
 
   const { data: userProfile } = useDoc<UserProfile>(userDocRef);
   
-  const [userRole, setUserRole] = useState(userProfile?.role || 'user');
+  const [userRole, setUserRole] = useState(userProfile?.role || 'reader');
   const { t, setLanguage } = useLanguage();
+
+  useEffect(() => {
+    if (userProfile?.role) {
+      setUserRole(userProfile.role);
+    }
+  }, [userProfile]);
+
+  const handleRoleChange = (newRole: 'reader' | 'shop' | 'superadmin') => {
+    setUserRole(newRole);
+    if(userDocRef) {
+        setDocumentNonBlocking(userDocRef, { role: newRole }, { merge: true });
+    }
+  }
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -141,7 +154,7 @@ export function AppHeader() {
             <span>{t('profile')}</span>
           </Link>
         </DropdownMenuItem>
-        {userRole === 'shop' && (
+        {(userRole === 'shop' || userRole === 'superadmin') && (
           <DropdownMenuItem asChild>
             <Link href="/dashboard">
               <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -217,10 +230,11 @@ export function AppHeader() {
         </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          {userProfile?.role === 'shop' && <div className='text-sm text-muted-foreground'>
-            <select value={userRole} onChange={(e) => setUserRole(e.target.value)} className='ml-1 bg-transparent border rounded-md p-1'>
-                <option value="user">User</option>
+          {userProfile?.role && <div className='text-sm text-muted-foreground'>
+            <select value={userRole} onChange={(e) => handleRoleChange(e.target.value as any)} className='ml-1 bg-transparent border rounded-md p-1'>
+                <option value="reader">User</option>
                 <option value="shop">Shop</option>
+                <option value="superadmin">Superadmin</option>
             </select>
           </div>}
           <UserMenu />
