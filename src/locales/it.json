@@ -159,6 +159,7 @@
   "profile_subscription_manage_button": "Gestisci Abbonamento",
   "free": "Gratuito",
   "pro": "Pro",
+  "collector": "Collezionista",
   "unlimited": "Illimitato",
   "swaps_title": "I Miei Scambi",
   "swaps_subtitle": "Tieni traccia dei tuoi scambi di libri in sospeso, attivi e completati.",
@@ -233,5 +234,3 @@
   "condition_fair": "Accettabile",
   "condition_poor": "Scadente"
 }
-
-    

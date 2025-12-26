@@ -33,7 +33,7 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown, X, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { bookGenres } from '@/lib/placeholder-data';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +44,7 @@ type UserProfile = {
     name: string;
     email: string;
     city: string;
-    subscription: string;
+    subscription: 'Free' | 'Pro' | 'Collector';
     avatarUrl: string;
     favoriteGenres?: string[];
 }
@@ -200,7 +200,15 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-8">
-            <Card className="text-center">
+            <Card className="text-center relative">
+                 {userProfile.subscription !== 'Free' && (
+                    <div className="absolute top-4 right-4">
+                        <Badge className='bg-primary text-primary-foreground'>
+                            <Star className='h-4 w-4 mr-2 fill-primary-foreground'/>
+                            {t(userProfile.subscription.toLowerCase())}
+                        </Badge>
+                    </div>
+                )}
                 <CardContent className='pt-6'>
                     <Avatar className='mx-auto h-24 w-24 mb-4'>
                         <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />

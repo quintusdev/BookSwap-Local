@@ -1,3 +1,4 @@
+
 import type { ImagePlaceholder } from './placeholder-images';
 import { PlaceHolderImages } from './placeholder-images';
 
@@ -9,6 +10,7 @@ type Book = {
   city: string;
   ownerId: string;
   ownerName: string;
+  ownerSubscription: 'Free' | 'Pro' | 'Collector';
   status: 'available' | 'in-swap' | 'swapped';
   coverImage: ImagePlaceholder;
   genre: string;
@@ -21,7 +23,7 @@ type User = {
   role: 'user' | 'shop';
   city: string;
   avatar: ImagePlaceholder;
-  subscription: 'Free' | 'Pro' | 'Unlimited';
+  subscription: 'Free' | 'Pro' | 'Collector';
 };
 
 type Swap = {
@@ -87,7 +89,7 @@ export const mockUsers: User[] = [
     role: 'shop',
     city: 'New York',
     avatar: PlaceHolderImages.find((img) => img.id === 'shop-logo-1')!,
-    subscription: 'Unlimited',
+    subscription: 'Collector',
   },
   {
     id: 'user-3',
@@ -96,7 +98,7 @@ export const mockUsers: User[] = [
     role: 'user',
     city: 'San Francisco',
     avatar: PlaceHolderImages.find((img) => img.id === 'avatar-3')!,
-    subscription: 'Free',
+    subscription: 'Pro',
   },
   {
     id: 'user-4',
@@ -122,6 +124,7 @@ export const mockBooks: Book[] = [
     city: 'New York',
     ownerId: 'user-1',
     ownerName: 'Alice',
+    ownerSubscription: 'Pro',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-1')!,
     genre: 'Historical Fiction',
@@ -133,6 +136,7 @@ export const mockBooks: Book[] = [
     city: 'New York',
     ownerId: 'user-1',
     ownerName: 'Alice',
+    ownerSubscription: 'Pro',
     status: 'in-swap',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-2')!,
     genre: 'Historical Fiction',
@@ -144,6 +148,7 @@ export const mockBooks: Book[] = [
     city: 'Los Angeles',
     ownerId: 'user-2',
     ownerName: 'Bob',
+    ownerSubscription: 'Free',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-3')!,
     genre: 'Science Fiction',
@@ -155,6 +160,7 @@ export const mockBooks: Book[] = [
     city: 'San Francisco',
     ownerId: 'user-3',
     ownerName: 'Charlie',
+    ownerSubscription: 'Pro',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-4')!,
     genre: 'Romance',
@@ -166,6 +172,7 @@ export const mockBooks: Book[] = [
     city: 'New York',
     ownerId: 'user-4',
     ownerName: 'Diana',
+    ownerSubscription: 'Free',
     status: 'swapped',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-5')!,
     genre: 'Fantasy',
@@ -177,6 +184,7 @@ export const mockBooks: Book[] = [
     city: 'Los Angeles',
     ownerId: 'user-2',
     ownerName: 'Bob',
+    ownerSubscription: 'Free',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-6')!,
     genre: 'Science Fiction',
@@ -188,6 +196,7 @@ export const mockBooks: Book[] = [
     city: 'New York',
     ownerId: 'user-4',
     ownerName: 'Diana',
+    ownerSubscription: 'Free',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-1')!,
     genre: 'Historical Fiction',
@@ -199,6 +208,7 @@ export const mockBooks: Book[] = [
     city: 'San Francisco',
     ownerId: 'user-3',
     ownerName: 'Charlie',
+    ownerSubscription: 'Pro',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-3')!,
     genre: 'Historical Fiction',
@@ -210,6 +220,7 @@ export const mockBooks: Book[] = [
     city: 'Los Angeles',
     ownerId: 'user-2',
     ownerName: 'Bob',
+    ownerSubscription: 'Free',
     status: 'in-swap',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-4')!,
     genre: 'Fantasy',
@@ -221,13 +232,14 @@ export const mockBooks: Book[] = [
     city: 'New York',
     ownerId: 'user-1',
     ownerName: 'Alice',
+    ownerSubscription: 'Pro',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-5')!,
     genre: 'Fantasy',
   },
 ];
 
-export const mockWishlist: Omit<Book, 'ownerId' | 'ownerName' | 'status' | 'city' | 'genre'>[] = [
+export const mockWishlist: Omit<Book, 'ownerId' | 'ownerName' | 'status' | 'city' | 'genre'|'ownerSubscription'>[] = [
   {
     id: 'wish-1',
     title: 'Dune',
@@ -298,21 +310,21 @@ export const pricingTiers: PricingTier[] = [
         name: 'Reader',
         price: 'Free',
         pricePeriod: '',
-        features: ['1 swap per month', 'Browse all books', 'Create a wishlist'],
+        features: ['pricing_feature_1_swap', 'pricing_feature_browse', 'pricing_feature_wishlist'],
         isFeatured: false,
     },
     {
         name: 'Avid Reader',
         price: '$5',
         pricePeriod: '/ month',
-        features: ['Up to 3 swaps per month', 'Priority support', 'Early access to new features'],
+        features: ['pricing_feature_3_swaps', 'pricing_feature_priority_support', 'pricing_feature_early_access'],
         isFeatured: true,
     },
     {
         name: 'Collector',
         price: '$10',
         pricePeriod: '/ month',
-        features: ['Unlimited swaps', 'All Avid Reader benefits', 'Support independent bookstores'],
+        features: ['pricing_feature_unlimited_swaps', 'pricing_feature_all_avid_benefits', 'pricing_feature_support_indie'],
         isFeatured: false,
     },
 ];

@@ -159,6 +159,7 @@
   "profile_subscription_manage_button": "Manage Subscription",
   "free": "Free",
   "pro": "Pro",
+  "collector": "Collector",
   "unlimited": "Unlimited",
   "swaps_title": "My Swaps",
   "swaps_subtitle": "Track your pending, active, and completed book swaps.",
@@ -233,5 +234,3 @@
   "condition_fair": "Fair",
   "condition_poor": "Poor"
 }
-
-    

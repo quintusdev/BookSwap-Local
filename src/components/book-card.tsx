@@ -5,9 +5,10 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Repeat } from 'lucide-react';
+import { Repeat, Star } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { useLanguage } from '@/context/language-context';
+import { cn } from '@/lib/utils';
 
 type BookCardProps = {
   book: {
@@ -16,6 +17,7 @@ type BookCardProps = {
     author: string;
     city: string;
     ownerName: string;
+    ownerSubscription?: 'Free' | 'Pro' | 'Collector';
     status: 'available' | 'in-swap' | 'swapped';
     coverImage: (typeof PlaceHolderImages)[0];
   };
@@ -23,10 +25,22 @@ type BookCardProps = {
 
 export function BookCard({ book }: BookCardProps) {
     const { t } = useLanguage();
+    const isPro = book.ownerSubscription === 'Pro' || book.ownerSubscription === 'Collector';
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-lg">
+    <Card className={cn(
+        "overflow-hidden transition-all hover:shadow-lg",
+        isPro && "border-primary/50"
+    )}>
       <CardContent className="p-0">
         <div className="relative aspect-[2/3] w-full">
+            {isPro && (
+                <div className="absolute top-2 right-2 z-10">
+                    <Badge className="bg-primary hover:bg-primary text-primary-foreground">
+                        <Star className='h-3 w-3 mr-1 fill-primary-foreground' />
+                        PRO
+                    </Badge>
+                </div>
+            )}
           <Image
             src={book.coverImage.imageUrl}
             alt={`Cover of ${book.title}`}
