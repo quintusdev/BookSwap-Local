@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Book,
   Heart,
@@ -36,19 +36,40 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useLanguage } from '@/context/language-context';
+import { useAuth, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
-// Mock user for demonstration
-const mockUser = {
-  name: 'Alice',
-  email: 'alice@example.com',
-  avatarUrl: 'https://picsum.photos/seed/BSAvatar1/200/200',
-  role: 'user', // can be 'user' or 'shop'
-};
+
+type UserProfile = {
+  name?: string;
+  email?: string;
+  avatarUrl?: string;
+  role?: 'user' | 'shop';
+}
 
 export function AppHeader() {
   const pathname = usePathname();
-  const [userRole, setUserRole] = useState(mockUser.role); // 'user' or 'shop'
+  const router = useRouter();
+  const { user } = useUser();
+  const auth = useAuth();
+  const firestore = useFirestore();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userDocRef);
+  
+  const [userRole, setUserRole] = useState(userProfile?.role || 'user');
   const { t, setLanguage } = useLanguage();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
 
   const navLinks = [
     { href: '/home', label: t('home'), icon: Home },
@@ -99,17 +120,17 @@ export function AppHeader() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={mockUser.avatarUrl} alt={mockUser.name} />
-            <AvatarFallback>{mockUser.name.charAt(0)}</AvatarFallback>
+            <AvatarImage src={userProfile?.avatarUrl} alt={userProfile?.name} />
+            <AvatarFallback>{userProfile?.name?.charAt(0)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{mockUser.name}</p>
+            <p className="text-sm font-medium leading-none">{userProfile?.name}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {mockUser.email}
+              {userProfile?.email}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -135,11 +156,9 @@ export function AppHeader() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>{t('log_out')}</span>
-          </Link>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>{t('log_out')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -198,12 +217,12 @@ export function AppHeader() {
         </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          <div className='text-sm text-muted-foreground'>
+          {userProfile?.role === 'shop' && <div className='text-sm text-muted-foreground'>
             <select value={userRole} onChange={(e) => setUserRole(e.target.value)} className='ml-1 bg-transparent border rounded-md p-1'>
                 <option value="user">User</option>
                 <option value="shop">Shop</option>
             </select>
-          </div>
+          </div>}
           <UserMenu />
         </div>
       </div>

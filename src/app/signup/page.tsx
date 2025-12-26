@@ -1,6 +1,9 @@
 
 'use client';
 
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,15 +13,82 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/logo';
 import { useLanguage } from '@/context/language-context';
+import { useAuth, useUser, setDocumentNonBlocking } from '@/firebase';
+import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { doc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { useEffect } from 'react';
+
+const formSchema = z.object({
+  firstName: z.string().min(1, { message: 'First name is required' }),
+  lastName: z.string().min(1, { message: 'Last name is required' }),
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  role: z.enum(['reader', 'library']),
+});
 
 export default function SignupPage() {
-    const { t } = useLanguage();
+  const { t } = useLanguage();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      role: 'reader',
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      await initiateEmailSignUp(auth, values.email, values.password);
+      // We can't get the user immediately, so we'll rely on the onAuthStateChanged listener
+      // and a useEffect to create the user document.
+    } catch (error) {
+      console.error('Error signing up:', error);
+      // Handle signup errors, e.g., show a toast notification
+    }
+  }
+
+   useEffect(() => {
+    if (user) {
+      const { values } = form.getValues();
+      const userRef = doc(firestore, 'users', user.uid);
+      setDocumentNonBlocking(userRef, {
+        id: user.uid,
+        email: user.email,
+        name: `${values.firstName} ${values.lastName}`,
+        role: values.role,
+        city: 'Not set', // Default value
+      }, { merge: true });
+      router.push('/home');
+    }
+  }, [user, firestore, form, router]);
+
+
+  if (isUserLoading) {
+    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+  }
+  
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="mb-8">
@@ -27,45 +97,100 @@ export default function SignupPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">{t('signup_title')}</CardTitle>
-          <CardDescription>
-            {t('signup_subtitle')}
-          </CardDescription>
+          <CardDescription>{t('signup_subtitle')}</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
-             <div className="grid gap-2">
-                <Label htmlFor="first-name">{t('signup_first_name_label')}</Label>
-                <Input id="first-name" placeholder="Max" required />
-            </div>
-            <div className="grid gap-2">
-                <Label htmlFor="last-name">{t('signup_last_name_label')}</Label>
-                <Input id="last-name" placeholder="Robinson" required />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">{t('email_label')}</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">{t('password_label')}</Label>
-            <Input id="password" type="password" required />
-          </div>
-           <div className="grid gap-2">
-             <Label>{t('signup_i_am_a_label')}</Label>
-            <RadioGroup defaultValue="reader" className="flex gap-4 pt-1">
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="reader" id="r1" />
-                    <Label htmlFor="r1">{t('signup_reader_option')}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="library" id="r2" />
-                    <Label htmlFor="r2">{t('signup_library_option')}</Label>
-                </div>
-            </RadioGroup>
-          </div>
-          <Button type="submit" className="w-full bg-primary hover:bg-primary/90" asChild>
-            <Link href="/home">{t('signup_create_account_button')}</Link>
-          </Button>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('signup_first_name_label')}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Max" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('signup_last_name_label')}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Robinson" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('email_label')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder="m@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('password_label')}</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('signup_i_am_a_label')}</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex gap-4 pt-1"
+                      >
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <RadioGroupItem value="reader" id="r1" />
+                          </FormControl>
+                          <FormLabel htmlFor="r1" className='font-normal'>{t('signup_reader_option')}</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <RadioGroupItem value="library" id="r2" />
+                          </FormControl>
+                          <FormLabel htmlFor="r2" className='font-normal'>{t('signup_library_option')}</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+                {t('signup_create_account_button')}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
         <div className="mt-4 p-6 pt-0 text-center text-sm">
           {t('signup_already_have_account_prompt')}{' '}
