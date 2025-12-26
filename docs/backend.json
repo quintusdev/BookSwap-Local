@@ -18,15 +18,25 @@
         },
         "name": {
           "type": "string",
-          "description": "User's full name."
+          "description": "User's full name or business name."
         },
         "role": {
           "type": "string",
-          "description": "Role of the user (reader, library, or superadmin)."
+          "description": "Role of the user (reader, shop, superadmin, or professional).",
+          "enum": ["reader", "shop", "superadmin", "professional"]
+        },
+        "userType": {
+          "type": "string",
+          "description": "Defines the user category, e.g., 'professional' for business accounts.",
+          "enum": ["reader", "professional"]
         },
         "city": {
           "type": "string",
           "description": "City where the user is located."
+        },
+        "address": {
+            "type": "string",
+            "description": "Full address for professional users (intermediaries)."
         },
         "avatarUrl": {
           "type": "string",
@@ -42,6 +52,25 @@
         "rating": {
           "type": "number",
           "description": "The user's average rating from swaps."
+        },
+        "reviewCount": {
+          "type": "number",
+          "description": "Total number of reviews received."
+        },
+        "subscriptionStatus": {
+            "type": "string",
+            "description": "Subscription status for professional users.",
+            "enum": ["active", "trialing", "cancelled", "past_due"]
+        },
+        "acceptedTermsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp for when the user accepted the terms of service."
+        },
+        "acceptedPrivacyAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp for when the user accepted the privacy policy."
         }
       },
       "required": [

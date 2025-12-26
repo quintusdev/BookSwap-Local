@@ -45,6 +45,14 @@ service cloud.firestore {
     function isSuperAdmin() {
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
+    
+    /**
+     * Checks if the current user has a professional role ('shop' or 'professional').
+     */
+     function isProfessional() {
+        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+        return isSignedIn() && (userRole == 'shop' || userRole == 'professional');
+     }
 
     /**
      * Checks if the authenticated user's ID matches the provided userId.
@@ -104,6 +112,8 @@ service cloud.firestore {
     /**
      * @description Rules for user profile documents.
      * @path /users/{userId}
+     * @allow A user can read/update their own profile. Superadmin has full access.
+     * @allow Creation is allowed if the user is creating their own profile document.
      */
     match /users/{userId} {
       allow get, update: if isOwner(userId) || isSuperAdmin();
@@ -161,9 +171,9 @@ service cloud.firestore {
      * @path /reviews/{reviewId}
      */
     match /reviews/{reviewId} {
-        allow get, list: if true;
+        allow get, list: if true; // Publicly readable to build trust
         allow create: if isSignedIn() && request.auth.uid == request.resource.data.reviewerId;
-        allow update: if false;
+        allow update: if false; // Reviews are immutable
         allow delete: if isSuperAdmin();
     }
 
@@ -172,9 +182,10 @@ service cloud.firestore {
      * @path /libraryTransactions/{libraryTransactionId}
      */
     match /libraryTransactions/{libraryTransactionId} {
-      allow read, write: if (isSignedIn() && resource.data.libraryId == request.auth.uid) || isSuperAdmin();
+      // Only the library/shop itself or a superadmin can manage transactions.
+      allow read, write: if (isProfessional() && resource.data.libraryId == request.auth.uid) || isSuperAdmin();
       allow list: if isSuperAdmin();
-      allow create: if (isSignedIn() && request.resource.data.libraryId == request.auth.uid) || isSuperAdmin();
+      allow create: if (isProfessional() && request.resource.data.libraryId == request.auth.uid) || isSuperAdmin();
     }
 
     /**
@@ -182,6 +193,7 @@ service cloud.firestore {
      * @path /chats/{chatId}
      */
     match /chats/{chatId} {
+      // Only participants of the chat can access it.
       allow get, update, create: if isSignedIn() && request.auth.uid in resource.data.users;
       allow list: if isSuperAdmin();
 
@@ -190,7 +202,9 @@ service cloud.firestore {
        * @path /chats/{chatId}/messages/{messageId}
        */
       match /messages/{messageId} {
+        // Participants can list/get messages.
         allow list, get: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
+        // A participant can create a message. System messages are also allowed.
         allow create: if isSignedIn() && (request.auth.uid == request.resource.data.senderId || request.resource.data.senderId == 'system') && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
         allow update: if false; // Messages are immutable for users
         allow delete: if isSuperAdmin();
