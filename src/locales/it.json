@@ -114,7 +114,6 @@
   "my_books_dialog_book_title_label": "Titolo",
   "my_books_dialog_author_label": "Autore",
   "my_books_dialog_isbn_label": "ISBN",
-  "my_books_dialog_city_label": "Città",
   "my_books_dialog_add_book_button": "Aggiungi Libro",
   "my_books_actions_label": "Azioni",
   "my_books_actions_edit": "Modifica",
@@ -221,7 +220,18 @@
   "swaps_rating_required_title": "Valutazione Richiesta",
   "swaps_rating_required_desc": "Per favore, seleziona una valutazione prima di inviare.",
   "swaps_review_submitted_title": "Recensione Inviata",
-  "swaps_review_submitted_desc": "Grazie per il tuo feedback!"
+  "swaps_review_submitted_desc": "Grazie per il tuo feedback!",
+  "my_books_dialog_publication_year_label": "Anno di Pubblicazione",
+  "my_books_dialog_publisher_label": "Editore",
+  "my_books_dialog_notes_label": "Note",
+  "my_books_dialog_notes_placeholder": "Es. Prima edizione, copia autografata...",
+  "my_books_dialog_condition_label": "Condizione",
+  "my_books_dialog_condition_placeholder": "Seleziona la condizione del libro",
+  "condition_new": "Nuovo",
+  "condition_like_new": "Come Nuovo",
+  "condition_good": "Buono",
+  "condition_fair": "Accettabile",
+  "condition_poor": "Scadente"
 }
 
     

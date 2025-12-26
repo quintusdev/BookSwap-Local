@@ -114,7 +114,6 @@
   "my_books_dialog_book_title_label": "Title",
   "my_books_dialog_author_label": "Author",
   "my_books_dialog_isbn_label": "ISBN",
-  "my_books_dialog_city_label": "City",
   "my_books_dialog_add_book_button": "Add Book",
   "my_books_actions_label": "Actions",
   "my_books_actions_edit": "Edit",
@@ -221,7 +220,18 @@
   "swaps_rating_required_title": "Rating Required",
   "swaps_rating_required_desc": "Please select a rating before submitting.",
   "swaps_review_submitted_title": "Review Submitted",
-  "swaps_review_submitted_desc": "Thank you for your feedback!"
+  "swaps_review_submitted_desc": "Thank you for your feedback!",
+  "my_books_dialog_publication_year_label": "Publication Year",
+  "my_books_dialog_publisher_label": "Publisher",
+  "my_books_dialog_notes_label": "Notes",
+  "my_books_dialog_notes_placeholder": "e.g. First edition, signed copy...",
+  "my_books_dialog_condition_label": "Condition",
+  "my_books_dialog_condition_placeholder": "Select the book's condition",
+  "condition_new": "New",
+  "condition_like_new": "Like New",
+  "condition_good": "Good",
+  "condition_fair": "Fair",
+  "condition_poor": "Poor"
 }
 
     

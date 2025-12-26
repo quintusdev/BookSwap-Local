@@ -1,0 +1,545 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the BookSwap application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "User's full name."
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the user (reader, library, or superadmin)."
+        },
+        "city": {
+          "type": "string",
+          "description": "City where the user is located."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of the user's profile picture."
+        },
+        "favoriteGenres": {
+          "type": "array",
+          "description": "A list of the user's favorite book genres.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rating": {
+          "type": "number",
+          "description": "The user's average rating from swaps."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name",
+        "role",
+        "city"
+      ]
+    },
+    "Book": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Book",
+      "type": "object",
+      "description": "Represents a book available for swapping.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the book."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Book)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the book."
+        },
+        "author": {
+          "type": "string",
+          "description": "Author of the book."
+        },
+        "isbn": {
+          "type": "string",
+          "description": "ISBN of the book (optional)."
+        },
+        "city": {
+          "type": "string",
+          "description": "City where the book is available."
+        },
+        "imageUrls": {
+            "type": "array",
+            "description": "A list of URLs for the book's images.",
+            "items": { "type": "string" }
+        },
+        "publicationYear": {
+            "type": "number",
+            "description": "The year the book was published (optional)."
+        },
+        "publisher": {
+            "type": "string",
+            "description": "The publisher of the book (optional)."
+        },
+        "condition": {
+            "type": "string",
+            "description": "The condition of the book (e.g., new, like_new, good, fair, poor).",
+            "enum": ["new", "like_new", "good", "fair", "poor"]
+        },
+        "notes": {
+            "type": "string",
+            "description": "Additional notes or details about the book (optional)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "author",
+        "city"
+      ]
+    },
+    "WishlistItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WishlistItem",
+      "type": "object",
+      "description": "Represents a book on a user's wishlist.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the wishlist item."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N WishlistItem)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the desired book."
+        },
+        "author": {
+          "type": "string",
+          "description": "Author of the desired book."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "author"
+      ]
+    },
+    "Swap": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Swap",
+      "type": "object",
+      "description": "Represents a book swap transaction.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the swap."
+        },
+        "bookId": {
+          "type": "string",
+          "description": "Reference to Book being swapped."
+        },
+        "wishlistItemId": {
+          "type": "string",
+          "description": "Reference to WishlistItem being swapped for."
+        },
+        "bookOwnerId": {
+            "type": "string",
+            "description": "The UID of the user who owns the book."
+        },
+        "wishlistOwnerId": {
+            "type": "string",
+            "description": "The UID of the user who made the wish and initiated the swap."
+        },
+        "participantIds": {
+            "type": "array",
+            "description": "An array containing the UIDs of both participants for easy querying.",
+            "items": { "type": "string" }
+        },
+        "swapCode": {
+          "type": "string",
+          "description": "Unique code for the swap transaction."
+        },
+        "checkInLibraryId": {
+          "type": "string",
+          "description": "Reference to User (Shop) where the swap was checked in.  Null if not yet checked in."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the swap (e.g., pending, accepted, completed, cancelled)."
+        }
+      },
+      "required": [
+        "id",
+        "bookId",
+        "wishlistItemId",
+        "bookOwnerId",
+        "wishlistOwnerId",
+        "participantIds",
+        "swapCode",
+        "status"
+      ]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents a review and rating for a completed swap.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the review."
+        },
+        "swapId": {
+          "type": "string",
+          "description": "Reference to the Swap this review is for."
+        },
+        "reviewerId": {
+          "type": "string",
+          "description": "The UID of the user who wrote the review."
+        },
+        "revieweeId": {
+          "type": "string",
+          "description": "The UID of the user who is being reviewed."
+        },
+        "rating": {
+          "type": "number",
+          "description": "A numerical rating from 1 to 5."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The text content of the review (optional)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the review was created."
+        }
+      },
+      "required": ["id", "swapId", "reviewerId", "revieweeId", "rating", "createdAt"]
+    },
+    "SwapPass": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SwapPass",
+      "type": "object",
+      "description": "Represents a user's swap pass subscription.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the swap pass."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who owns the pass. (Relationship: User 1:N SwapPass)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of swap pass (e.g., 3 swaps/month, unlimited)."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date of the swap pass subscription.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "End date of the swap pass subscription.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "LibraryTransaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LibraryTransaction",
+      "type": "object",
+      "description": "Represents a transaction record for a library partner.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the transaction."
+        },
+        "libraryId": {
+          "type": "string",
+          "description": "Reference to User (Shop) that is the library. (Relationship: User 1:N LibraryTransaction)"
+        },
+        "swapId": {
+          "type": "string",
+          "description": "Reference to Swap that this transaction is for. (Relationship: Swap 1:N LibraryTransaction)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the transaction.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount earned by the library for the swap."
+        }
+      },
+      "required": [
+        "id",
+        "libraryId",
+        "swapId",
+        "date",
+        "amount"
+      ]
+    },
+    "Chat": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Chat",
+      "type": "object",
+      "description": "Represents a chat conversation between users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the chat session."
+        },
+        "users": {
+          "type": "array",
+          "description": "An array of user IDs participating in the chat.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lastMessage": {
+          "type": "object",
+          "description": "The last message sent in the chat, for preview purposes.",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "required": ["id", "users"]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a single message within a chat.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "The ID of the user who sent the message."
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The time the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "senderId", "text", "timestamp"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Uses path-based ownership for user data. ",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/books/{bookId}",
+        "definition": {
+          "entityName": "Book",
+          "schema": {
+            "$ref": "#/backend/entities/Book"
+          },
+          "description": "Stores books available for swapping, associated with a specific user. Uses path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "bookId",
+              "description": "The unique identifier for the book."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wishlist/{wishlistItemId}",
+        "definition": {
+          "entityName": "WishlistItem",
+          "schema": {
+            "$ref": "#/backend/entities/WishlistItem"
+          },
+          "description": "Stores wishlist items for a specific user. Uses path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "wishlistItemId",
+              "description": "The unique identifier for the wishlist item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/swaps/{swapId}",
+        "definition": {
+          "entityName": "Swap",
+          "schema": {
+            "$ref": "#/backend/entities/Swap"
+          },
+          "description": "Stores swap transaction data.",
+          "params": [
+            {
+              "name": "swapId",
+              "description": "The unique identifier for the swap."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Stores reviews for completed swaps. Access is restricted to participants.",
+          "params": [
+            {
+              "name": "reviewId",
+              "description": "The unique identifier for the review."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/swapPasses/{swapPassId}",
+        "definition": {
+          "entityName": "SwapPass",
+          "schema": {
+            "$ref": "#/backend/entities/SwapPass"
+          },
+          "description": "Stores swap pass subscription information for users. Uses path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "swapPassId",
+              "description": "The unique identifier for the swap pass."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/libraryTransactions/{libraryTransactionId}",
+        "definition": {
+          "entityName": "LibraryTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/LibraryTransaction"
+          },
+          "description": "Stores transaction records for library partners.",
+          "params": [
+            {
+              "name": "libraryTransactionId",
+              "description": "The unique identifier for the library transaction."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/chats/{chatId}",
+        "definition": {
+          "entityName": "Chat",
+          "schema": {
+            "$ref": "#/backend/entities/Chat"
+          },
+          "description": "Stores chat sessions between users. Access is restricted to participants.",
+          "params": [
+            {
+              "name": "chatId",
+              "description": "The unique identifier for the chat."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chats/{chatId}/messages/{messageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores individual messages within a chat. Access is restricted to chat participants.",
+          "params": [
+            {
+              "name": "chatId",
+              "description": "The unique identifier for the chat."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for the message."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the BookSwap application's core features, emphasizing security, scalability, and ease of debugging.  Authorization Independence is achieved through denormalization where necessary (specifically within Swaps and Chats).  Structural Segregation separates user-owned data (books, wishlists, swap passes) from global data (users, library transactions, chats), simplifying security rules.  Access Modeling utilizes path-based ownership for user data and existence checks for global roles and shared documents (like chats). QAPs are supported by segregating data based on access control needs (private user data vs. public book listings, managed through security rules). The structure facilitates secure `list` operations by avoiding the need for complex filtering within the rules themselves.  This approach makes the rules simpler and more secure. By adhering to the design principles, we can create a maintainable, understandable, and scalable backend for the BookSwap application."
+  }
+}
+
+    

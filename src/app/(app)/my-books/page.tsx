@@ -22,7 +22,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,11 +39,17 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 const bookSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   author: z.string().min(1, 'Author is required'),
   isbn: z.string().optional(),
+  publicationYear: z.coerce.number().optional(),
+  publisher: z.string().optional(),
+  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).optional(),
+  notes: z.string().optional(),
 });
 
 type Book = {
@@ -54,9 +59,18 @@ type Book = {
   isbn?: string;
   city: string;
   status: 'available' | 'in-swap' | 'swapped';
-  coverImage: { imageUrl: string; };
+  imageUrls: string[];
   userId: string;
+  condition?: 'new' | 'like_new' | 'good' | 'fair' | 'poor';
 }
+
+const bookConditions = [
+    { value: 'new', label: 'New' },
+    { value: 'like_new', label: 'Like New' },
+    { value: 'good', label: 'Good' },
+    { value: 'fair', label: 'Fair' },
+    { value: 'poor', label: 'Poor' },
+];
 
 export default function MyBooksPage() {
     const { t } = useLanguage();
@@ -91,7 +105,7 @@ export default function MyBooksPage() {
             <CardHeader className="flex-row items-start justify-between gap-4">
               <div className="flex-shrink-0">
                  <Image
-                  src={book.coverImage?.imageUrl || "https://picsum.photos/seed/1/80/120"}
+                  src={book.imageUrls?.[0] || "https://picsum.photos/seed/1/80/120"}
                   alt={book.title}
                   width={80}
                   height={120}
@@ -101,9 +115,16 @@ export default function MyBooksPage() {
               <div className="flex-grow space-y-1">
                 <CardTitle className="text-lg leading-tight">{book.title}</CardTitle>
                 <CardDescription>{book.author}</CardDescription>
-                <Badge variant={book.status === 'available' ? 'default' : 'secondary'} className='capitalize'>
-                    {t(`status_${book.status}`)}
-                </Badge>
+                <div className='flex flex-col items-start gap-1 mt-1'>
+                    <Badge variant={book.status === 'available' ? 'default' : 'secondary'} className='capitalize'>
+                        {t(`status_${book.status}`)}
+                    </Badge>
+                     {book.condition && (
+                        <Badge variant="outline" className='capitalize'>
+                            {t(`condition_${book.condition}`)}
+                        </Badge>
+                    )}
+                </div>
               </div>
               <BookActions bookId={book.id}/>
             </CardHeader>
@@ -137,6 +158,10 @@ function AddBookDialog() {
             title: '',
             author: '',
             isbn: '',
+            publicationYear: undefined,
+            publisher: '',
+            condition: 'good',
+            notes: '',
         }
     });
 
@@ -147,14 +172,18 @@ function AddBookDialog() {
         
         // In a real app, we'd get user's city from their profile
         const userCity = 'New York'; 
-        const randomImageId = Math.floor(Math.random() * 10) + 1;
+        
+        // Simulate multiple image uploads
+        const imageUrls = Array.from({ length: 3 }, (_, i) => 
+            `https://picsum.photos/seed/book${Math.random() * 1000}/${200 + i*10}/${300 + i*10}`
+        );
 
         addDocumentNonBlocking(booksCollection, {
             ...values,
             userId: user.uid,
             city: userCity,
             status: 'available',
-            coverImage: { imageUrl: `https://picsum.photos/seed/book${randomImageId}/200/300` }
+            imageUrls: imageUrls
         });
 
         form.reset();
@@ -177,32 +206,81 @@ function AddBookDialog() {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                 <FormField control={form.control} name="title" render={({field}) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel className="text-right">{t('my_books_dialog_book_title_label')}</FormLabel>
-                        <FormControl className="col-span-3">
+                    <FormItem>
+                        <FormLabel>{t('my_books_dialog_book_title_label')}</FormLabel>
+                        <FormControl>
                             <Input placeholder="The Great Gatsby" {...field} />
                         </FormControl>
-                         <FormMessage className="col-span-4" />
+                        <FormMessage />
                     </FormItem>
                 )} />
                  <FormField control={form.control} name="author" render={({field}) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel className="text-right">{t('my_books_dialog_author_label')}</FormLabel>
-                        <FormControl className="col-span-3">
+                    <FormItem>
+                        <FormLabel>{t('my_books_dialog_author_label')}</FormLabel>
+                        <FormControl>
                             <Input placeholder="F. Scott Fitzgerald" {...field} />
                         </FormControl>
-                        <FormMessage className="col-span-4" />
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField
+                    control={form.control}
+                    name="condition"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>{t('my_books_dialog_condition_label')}</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder={t('my_books_dialog_condition_placeholder')} />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {bookConditions.map(c => (
+                                <SelectItem key={c.value} value={c.value}>{t(`condition_${c.value}`)}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                <FormField control={form.control} name="publicationYear" render={({field}) => (
+                    <FormItem>
+                        <FormLabel>{t('my_books_dialog_publication_year_label')} (Optional)</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="1925" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={form.control} name="publisher" render={({field}) => (
+                    <FormItem>
+                        <FormLabel>{t('my_books_dialog_publisher_label')} (Optional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Charles Scribner's Sons" {...field} />
+                        </FormControl>
+                        <FormMessage />
                     </FormItem>
                 )} />
                  <FormField control={form.control} name="isbn" render={({field}) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel className="text-right">{t('my_books_dialog_isbn_label')}</FormLabel>
-                        <FormControl className="col-span-3">
-                            <Input placeholder="9780743273565 (Optional)" {...field} />
+                    <FormItem>
+                        <FormLabel>{t('my_books_dialog_isbn_label')} (Optional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="9780743273565" {...field} />
                         </FormControl>
-                         <FormMessage className="col-span-4" />
+                         <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={form.control} name="notes" render={({field}) => (
+                    <FormItem>
+                        <FormLabel>{t('my_books_dialog_notes_label')} (Optional)</FormLabel>
+                        <FormControl>
+                            <Textarea placeholder={t('my_books_dialog_notes_placeholder')} {...field} />
+                        </FormControl>
+                         <FormMessage />
                     </FormItem>
                 )} />
                  <DialogFooter>
@@ -246,3 +324,4 @@ function BookActions({ bookId }: { bookId: string }) {
     )
 }
 
+    
