@@ -10,6 +10,7 @@ import {
   Repeat,
   Search,
   Users,
+  Building,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -25,18 +26,18 @@ export default function Home() {
     const howItWorks = [
       {
         icon: Search,
-        title: t('how_it_works_step1_title'),
-        description: t('how_it_works_step1_desc'),
+        title: "Cerca e Desidera",
+        description: "Esplora migliaia di libri messi a disposizione da altri lettori nella tua città.",
       },
       {
         icon: Repeat,
-        title: t('how_it_works_step2_title'),
-        description: t('how_it_works_step2_desc'),
+        title: "Proponi lo Scambio",
+        description: "Offri uno dei tuoi libri per ottenere quello che desideri. La negoziazione è semplice e diretta.",
       },
       {
-        icon: MapPin,
-        title: t('how_it_works_step3_title'),
-        description: t('how_it_works_step3_desc'),
+        icon: Building,
+        title: "Incontrati in un Hub",
+        description: "Finalizza lo scambio in uno dei nostri punti partner (bar, librerie, caffè). Sicuro, facile e supporti il commercio locale.",
       },
     ];
 
@@ -73,18 +74,18 @@ export default function Home() {
               priority
             />
           )}
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white">
             <div className="container px-4 md:px-6">
               <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-                {t('landing_title')}
+                Dai Nuova Vita ai Libri e alla Tua Città
               </h1>
               <p className="mx-auto mt-4 max-w-[700px] text-lg md:text-xl">
-                {t('landing_subtitle')}
+                BookSwap cresce grazie ai luoghi che amiamo: le librerie, i caffè e le biblioteche che diventano il cuore pulsante della nostra community.
               </p>
               <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
                 <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
-                  <Link href="/signup">{t('get_started')}</Link>
+                  <Link href="/intermediary">Fai crescere la tua attività</Link>
                 </Button>
                 <Button asChild size="lg" variant="secondary">
                   <Link href="/signup">{t('browse_books')}</Link>
@@ -101,7 +102,7 @@ export default function Home() {
                 {t('how_it_works_title')}
               </h2>
               <p className="mt-4 text-muted-foreground md:text-xl">
-                {t('how_it_works_subtitle')}
+                Scambiare libri non è mai stato così sicuro e radicato nel territorio.
               </p>
             </div>
             <div className="mx-auto mt-12 grid max-w-5xl items-start gap-8 sm:grid-cols-3 md:gap-12">
@@ -117,6 +118,11 @@ export default function Home() {
                 </div>
               ))}
             </div>
+             <div className="mt-12 text-center">
+                <p className="text-lg text-muted-foreground">
+                    Senza i nostri <Link href="/intermediary" className="font-bold text-primary underline hover:text-primary/80">punti di scambio partner</Link>, non esisterebbe una vera community locale.
+                </p>
+             </div>
           </div>
         </section>
         
