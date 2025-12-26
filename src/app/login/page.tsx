@@ -33,7 +33,7 @@ export default function LoginPage() {
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" required />
           </div>
-          <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90" asChild>
              <Link href="/home">Sign In</Link>
           </Button>
         </CardContent>

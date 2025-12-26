@@ -43,6 +43,30 @@
       "imageHint": "mystery thriller"
     },
     {
+      "id": "book-cover-7",
+      "description": "Abstract design for a philosophy book",
+      "imageUrl": "https://images.unsplash.com/photo-1760904050751-bf1bf9de079c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwaGlsb3NvcGh5JTIwYWJzdHJhY3R8ZW58MHx8fHwxNzY2NzcyNzYzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "philosophy abstract"
+    },
+    {
+      "id": "book-cover-8",
+      "description": "Vintage illustration for a history book",
+      "imageUrl": "https://images.unsplash.com/photo-1688042972914-ec65958bf756?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxoaXN0b3J5JTIwdmludGFnZXxlbnwwfHx8fDE3NjY3NzI3NjR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "history vintage"
+    },
+    {
+      "id": "book-cover-9",
+      "description": "A vibrant cover for a travel guide",
+      "imageUrl": "https://images.unsplash.com/photo-1615318201878-e3499973e9dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0cmF2ZWwlMjBndWlkZXxlbnwwfHx8fDE3NjY3NzI3NjR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "travel guide"
+    },
+    {
+      "id": "book-cover-10",
+      "description": "A minimalist cover for a poetry book",
+      "imageUrl": "https://images.unsplash.com/photo-1751623263501-88d01861d0eb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwb2V0cnklMjBtaW5pbWFsaXN0fGVufDB8fHx8MTc2Njc3Mjc2NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "poetry minimalist"
+    },
+    {
       "id": "avatar-1",
       "description": "Avatar for a user named Alex",
       "imageUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjY3NTQyNTR8MA&ixlib=rb-4.1.0&q=80&w=1080",

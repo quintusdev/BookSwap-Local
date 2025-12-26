@@ -76,6 +76,29 @@ export const mockUsers: User[] = [
     avatar: PlaceHolderImages.find((img) => img.id === 'shop-logo-1')!,
     subscription: 'Unlimited',
   },
+  {
+    id: 'user-3',
+    name: 'Charlie',
+    email: 'charlie@example.com',
+    role: 'user',
+    city: 'San Francisco',
+    avatar: PlaceHolderImages.find((img) => img.id === 'avatar-3')!,
+    subscription: 'Free',
+  },
+  {
+    id: 'user-4',
+    name: 'Diana',
+    email: 'diana@example.com',
+    role: 'user',
+    city: 'New York',
+    avatar: {
+      id: 'avatar-4',
+      imageUrl: 'https://picsum.photos/seed/BSAvatar4/200/200',
+      description: 'Avatar for Diana',
+      imageHint: 'woman portrait',
+    },
+    subscription: 'Free',
+  },
 ];
 
 export const mockBooks: Book[] = [
@@ -129,7 +152,7 @@ export const mockBooks: Book[] = [
     status: 'swapped',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-5')!,
   },
-    {
+  {
     id: 'book-6',
     title: 'Brave New World',
     author: 'Aldous Huxley',
@@ -138,6 +161,46 @@ export const mockBooks: Book[] = [
     ownerName: 'Bob',
     status: 'available',
     coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-6')!,
+  },
+  {
+    id: 'book-7',
+    title: 'Moby Dick',
+    author: 'Herman Melville',
+    city: 'New York',
+    ownerId: 'user-4',
+    ownerName: 'Diana',
+    status: 'available',
+    coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-1')!,
+  },
+  {
+    id: 'book-8',
+    title: 'War and Peace',
+    author: 'Leo Tolstoy',
+    city: 'San Francisco',
+    ownerId: 'user-3',
+    ownerName: 'Charlie',
+    status: 'available',
+    coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-3')!,
+  },
+  {
+    id: 'book-9',
+    title: 'The Song of Achilles',
+    author: 'Madeline Miller',
+    city: 'Los Angeles',
+    ownerId: 'user-2',
+    ownerName: 'Bob',
+    status: 'in-swap',
+    coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-4')!,
+  },
+  {
+    id: 'book-10',
+    title: 'Circe',
+    author: 'Madeline Miller',
+    city: 'New York',
+    ownerId: 'user-1',
+    ownerName: 'Alice',
+    status: 'available',
+    coverImage: PlaceHolderImages.find((img) => img.id === 'book-cover-5')!,
   },
 ];
 
