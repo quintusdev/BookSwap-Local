@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -5,14 +6,17 @@ import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from './logo';
-
-const navLinks = [
-  { href: '#how-it-works', label: 'How It Works' },
-  { href: '#features', label: 'Features' },
-  { href: '/browse', label: 'Browse' },
-];
+import { useLanguage } from '@/context/language-context';
 
 export function LandingHeader() {
+  const { t } = useLanguage();
+
+  const navLinks = [
+    { href: '#how-it-works', label: t('how_it_works_title') },
+    { href: '#features', label: t('features_title') },
+    { href: '/browse', label: t('browse') },
+  ];
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -32,10 +36,10 @@ export function LandingHeader() {
         </nav>
         <div className="ml-auto hidden items-center gap-4 md:flex">
           <Button variant="ghost" asChild>
-            <Link href="/login">Sign In</Link>
+            <Link href="/login">{t('sign_in_button')}</Link>
           </Button>
           <Button asChild className="bg-primary hover:bg-primary/90">
-            <Link href="/signup">Sign Up</Link>
+            <Link href="/signup">{t('signup_title')}</Link>
           </Button>
         </div>
         <div className="md:hidden">
@@ -60,10 +64,10 @@ export function LandingHeader() {
                 ))}
                  <Separator />
                 <Button variant="outline" asChild>
-                    <Link href="/login">Sign In</Link>
+                    <Link href="/login">{t('sign_in_button')}</Link>
                 </Button>
                 <Button asChild className="bg-primary hover:bg-primary/90">
-                    <Link href="/signup">Sign Up</Link>
+                    <Link href="/signup">{t('signup_title')}</Link>
                 </Button>
               </nav>
             </SheetContent>

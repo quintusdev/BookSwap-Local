@@ -1,3 +1,6 @@
+
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -9,50 +12,52 @@ import {
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { LandingHeader } from '@/components/landing-header';
 import { LandingFooter } from '@/components/landing-footer';
+import { useLanguage } from '@/context/language-context';
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'landing-hero');
 
-const howItWorks = [
-  {
-    icon: Search,
-    title: 'Find & Wishlist',
-    description: 'Browse books available in your city. Add your favorite books to your wishlist.',
-  },
-  {
-    icon: Repeat,
-    title: 'Propose a Swap',
-    description: 'Found a book you want? Propose a swap with one of your available books.',
-  },
-  {
-    icon: MapPin,
-    title: 'Meet & Exchange',
-    description: 'Meet at a partner library to safely exchange your books using a unique swap code.',
-  },
-];
-
-const features = [
-  {
-    icon: Book,
-    title: 'Vast Library',
-    description: 'Access a diverse collection of books from readers all over your city.',
-  },
-  {
-    icon: Users,
-    title: 'Community Focused',
-    description: 'Connect with fellow book lovers and support local independent bookstores.',
-  },
-  {
-    icon: Heart,
-    title: 'Build Your Collection',
-    description: 'Discover new authors and genres without spending a fortune. Your next favorite book is a swap away.',
-  },
-];
-
 export default function Home() {
+    const { t } = useLanguage();
+
+    const howItWorks = [
+      {
+        icon: Search,
+        title: t('how_it_works_step1_title'),
+        description: t('how_it_works_step1_desc'),
+      },
+      {
+        icon: Repeat,
+        title: t('how_it_works_step2_title'),
+        description: t('how_it_works_step2_desc'),
+      },
+      {
+        icon: MapPin,
+        title: t('how_it_works_step3_title'),
+        description: t('how_it_works_step3_desc'),
+      },
+    ];
+
+    const features = [
+      {
+        icon: Book,
+        title: t('features_item1_title'),
+        description: t('features_item1_desc'),
+      },
+      {
+        icon: Users,
+        title: t('features_item2_title'),
+        description: t('features_item2_desc'),
+      },
+      {
+        icon: Heart,
+        title: t('features_item3_title'),
+        description: t('features_item3_desc'),
+      },
+    ];
+
   return (
     <div className="flex min-h-screen flex-col">
       <LandingHeader />
@@ -72,17 +77,17 @@ export default function Home() {
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white">
             <div className="container px-4 md:px-6">
               <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-                Rediscover Reading. Swap Locally.
+                {t('landing_title')}
               </h1>
               <p className="mx-auto mt-4 max-w-[700px] text-lg md:text-xl">
-                Join a community of book lovers. Trade your read books for new adventures and support local bookstores in the process.
+                {t('landing_subtitle')}
               </p>
               <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
                 <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
-                  <Link href="/signup">Get Started</Link>
+                  <Link href="/signup">{t('get_started')}</Link>
                 </Button>
                 <Button asChild size="lg" variant="secondary">
-                  <Link href="/browse">Browse Books</Link>
+                  <Link href="/browse">{t('browse_books')}</Link>
                 </Button>
               </div>
             </div>
@@ -93,10 +98,10 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="font-headline text-3xl font-bold tracking-tight sm:text-4xl">
-                How It Works
+                {t('how_it_works_title')}
               </h2>
               <p className="mt-4 text-muted-foreground md:text-xl">
-                Swapping books is as easy as 1-2-3.
+                {t('how_it_works_subtitle')}
               </p>
             </div>
             <div className="mx-auto mt-12 grid max-w-5xl items-start gap-8 sm:grid-cols-3 md:gap-12">
@@ -119,10 +124,10 @@ export default function Home() {
           <div className="container grid items-center gap-6 px-4 md:px-6 lg:grid-cols-2 lg:gap-10">
             <div className="space-y-4">
               <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                Why You'll Love BookSwap
+                {t('features_title')}
               </h2>
               <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                We're more than just a platform; we're a community built on the love for reading and local culture.
+                {t('features_subtitle')}
               </p>
             </div>
             <div className="grid gap-6">
@@ -144,13 +149,13 @@ export default function Home() {
         <section id="join" className="w-full py-12 md:py-24">
           <div className="container flex flex-col items-center justify-center gap-4 px-4 text-center md:px-6">
             <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl">
-              Ready to Swap?
+              {t('join_title')}
             </h2>
             <p className="max-w-md text-muted-foreground">
-              Sign up today and start your next reading adventure. It's free to join!
+              {t('join_subtitle')}
             </p>
             <Button asChild size="lg" className="mt-4 bg-primary hover:bg-primary/90">
-              <Link href="/signup">Create Your Account</Link>
+              <Link href="/signup">{t('create_your_account')}</Link>
             </Button>
           </div>
         </section>
