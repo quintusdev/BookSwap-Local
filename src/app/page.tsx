@@ -87,7 +87,7 @@ export default function Home() {
                   <Link href="/signup">{t('get_started')}</Link>
                 </Button>
                 <Button asChild size="lg" variant="secondary">
-                  <Link href="/browse">{t('browse_books')}</Link>
+                  <Link href="/signup">{t('browse_books')}</Link>
                 </Button>
               </div>
             </div>
