@@ -1,0 +1,186 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated content
+ * such as their profile, books, wishlist, and swap passes are stored in subcollections under their
+ * unique user ID (`/users/{userId}`). Access is strictly limited to the authenticated owner of that data tree.
+ *
+ * Data Structure: User-specific data is hierarchically organized under `/users/{userId}`. Shared or
+ * transactional data, like `/swaps` and `/libraryTransactions`, are placed in top-level collections.
+ * This structural segregation simplifies security rules and improves query performance.
+ *
+ * Key Security Decisions:
+ * - User Listing Disabled: It is not possible to query the list of all application users.
+ * - Private Data Isolation: Top-level collections like `/swaps` and `/libraryTransactions` that contain
+ *   sensitive data shared between specific users are not listable. Individual documents can only be
+ *   accessed by authorized participants.
+ * - Path-Based Security: For all data under `/users/{userId}`, authorization is primarily determined
+ *   by matching the `userId` in the path with the requester's authenticated UID.
+ *
+ * Denormalization for Authorization: To ensure performant and secure access control, this ruleset
+ * relies on denormalized data. Most critically, documents in the `/swaps` collection MUST contain
+ * the UIDs of all participants (e.g., `bookOwnerId`, `wishlistOwnerId`). This avoids slow and costly
+ * cross-collection `get()` calls during rule evaluation and is essential for securing swap data.
+ *
+ * Structural Segregation: User data is kept in private subcollections (`/users/{userId}/books`),
+ * which is more secure and performant for listing a user's own items than a single global collection
+ * with a 'userId' field.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's ID matches the provided userId.
+     * This is the core of the user-ownership model.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * A more robust check for update/delete operations, ensuring the document
+     * exists before attempting to modify it and that the user is the owner.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates that the document being created has an 'id' field that
+     * matches the document's ID, which is the user's UID.
+     * Enforces consistency for a user's root profile document.
+     */
+    function isCreatingOwnProfile(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Validates that a document being created in a user's subcollection
+     * has a 'userId' field that correctly points back to the parent user.
+     * Enforces relational integrity.
+     */
+    function isCreatingOwnSubdocument(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Enforces immutability for critical relational ID fields during an update,
+     * preventing re-assignment of ownership.
+     */
+    function isUserIdImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * Enforces immutability for the root user profile's 'id' field.
+     */
+    function isProfileIdImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+
+    /**
+     * @description Rules for user profile documents.
+     * @path /users/{userId}
+     * @allow A user (auth.uid='user123') can (get) or (update) their own profile at /users/user123.
+     * @deny A user (auth.uid='user456') cannot (get) or (delete) another user's profile at /users/user123.
+     * @deny Anonymous users cannot (list) all users in the collection.
+     * @principle Restricts access to a user's own profile data and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isCreatingOwnProfile(userId);
+      allow update: if isExistingOwner(userId) && isProfileIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's collection of books they offer for swapping.
+     * @path /users/{userId}/books/{bookId}
+     * @allow A user (auth.uid='user123') can (create), (list), or (delete) books in their own collection at /users/user123/books.
+     * @deny A user (auth.uid='user456') cannot (get) or (update) a book in another user's collection at /users/user123/books/{bookId}.
+     * @principle Enforces strict data ownership within a user's private subcollection.
+     */
+    match /users/{userId}/books/{bookId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isCreatingOwnSubdocument(userId);
+      allow update: if isExistingOwner(userId) && isUserIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's personal wishlist.
+     * @path /users/{userId}/wishlist/{wishlistItemId}
+     * @allow A user (auth.uid='user123') can (create) and (list) items in their own wishlist at /users/user123/wishlist.
+     * @deny A user (auth.uid='user456') cannot (read) or (delete) items from another user's wishlist.
+     * @principle Secures a user's private wishlist, ensuring only they can view or modify it.
+     */
+    match /users/{userId}/wishlist/{wishlistItemId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isCreatingOwnSubdocument(userId);
+      allow update: if isExistingOwner(userId) && isUserIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's swap pass subscriptions.
+     * @path /users/{userId}/swapPasses/{swapPassId}
+     * @allow A user (auth.uid='user123') can (get) their own swap pass at /users/user123/swapPasses/{swapPassId}.
+     * @deny Another user (auth.uid='user456') cannot (list) or (create) swap passes for user 'user123'.
+     * @principle Protects sensitive subscription and payment-related information, limiting access to the owner.
+     */
+    match /users/{userId}/swapPasses/{swapPassId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isCreatingOwnSubdocument(userId);
+      allow update: if isExistingOwner(userId) && isUserIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for swap transaction documents.
+     * @path /swaps/{swapId}
+     * @allow A user who is a participant (e.g., auth.uid equals `bookOwnerId`) can (get) the swap document.
+     * @deny A user not involved in the swap cannot (get) or (update) the swap document.
+     * @deny No user can (list) all swaps in the collection.
+     * @principle Enforces shared access for a closed set of collaborators (the swap participants).
+     *             CRITICAL: This rule assumes the Swap document contains denormalized `bookOwnerId` and `wishlistOwnerId` fields.
+     */
+    match /swaps/{swapId} {
+      allow get: if isSignedIn() && (request.auth.uid == resource.data.bookOwnerId || request.auth.uid == resource.data.wishlistOwnerId);
+      allow list: if false;
+      allow create: if isSignedIn() && request.resource.data.wishlistOwnerId == request.auth.uid; // Assumes wishlist owner initiates swap
+      allow update: if isSignedIn() && resource != null && (request.auth.uid == resource.data.bookOwnerId || request.auth.uid == resource.data.wishlistOwnerId);
+      allow delete: if isSignedIn() && resource != null && (request.auth.uid == resource.data.bookOwnerId || request.auth.uid == resource.data.wishlistOwnerId);
+    }
+
+    /**
+     * @description Rules for transaction records for library partners.
+     * @path /libraryTransactions/{libraryTransactionId}
+     * @allow A user whose UID matches the `libraryId` on the document can (create) and (read) their own transaction.
+     * @deny A library owner (auth.uid='shop123') cannot (get) a transaction belonging to another library at /libraryTransactions/{transactionIdForShop456}.
+     * @deny The collection of all transactions is not listable.
+     * @principle Secures business-sensitive data by tying access to an ownership field within the document.
+     */
+    match /libraryTransactions/{libraryTransactionId} {
+      allow get: if isSignedIn() && resource.data.libraryId == request.auth.uid;
+      allow list: if false;
+      allow create: if isSignedIn() && request.resource.data.libraryId == request.auth.uid;
+      allow update: if isSignedIn() && resource != null && resource.data.libraryId == request.auth.uid;
+      allow delete: if isSignedIn() && resource != null && resource.data.libraryId == request.auth.uid;
+    }
+  }
+}
