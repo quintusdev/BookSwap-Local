@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -17,6 +18,7 @@ import { useLanguage } from '@/context/language-context';
 import { useUser, useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, addDocumentNonBlocking, getDocument } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMemo } from 'react';
 
 type Swap = {
     id: string;
@@ -36,6 +38,7 @@ type Swap = {
     checkInLibraryId: string;
     checkInLibraryName: string;
     createdAt: any;
+    participantIds: string[];
 }
 
 
