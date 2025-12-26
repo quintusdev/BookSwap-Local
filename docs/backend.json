@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -80,6 +81,28 @@
         "city": {
           "type": "string",
           "description": "City where the book is available."
+        },
+        "imageUrls": {
+            "type": "array",
+            "description": "A list of URLs for the book's images.",
+            "items": { "type": "string" }
+        },
+        "publicationYear": {
+            "type": "number",
+            "description": "The year the book was published (optional)."
+        },
+        "publisher": {
+            "type": "string",
+            "description": "The publisher of the book (optional)."
+        },
+        "condition": {
+            "type": "string",
+            "description": "The condition of the book (e.g., new, like_new, good, fair, poor).",
+            "enum": ["new", "like_new", "good", "fair", "poor"]
+        },
+        "notes": {
+            "type": "string",
+            "description": "Additional notes or details about the book (optional)."
         }
       },
       "required": [
@@ -349,7 +372,10 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com",
+      "apple.com",
+      "microsoft.com"
     ]
   },
   "firestore": {
@@ -518,5 +544,3 @@
     "reasoning": "The Firestore data structure is designed to support the BookSwap application's core features, emphasizing security, scalability, and ease of debugging.  Authorization Independence is achieved through denormalization where necessary (specifically within Swaps and Chats).  Structural Segregation separates user-owned data (books, wishlists, swap passes) from global data (users, library transactions, chats), simplifying security rules.  Access Modeling utilizes path-based ownership for user data and existence checks for global roles and shared documents (like chats). QAPs are supported by segregating data based on access control needs (private user data vs. public book listings, managed through security rules). The structure facilitates secure `list` operations by avoiding the need for complex filtering within the rules themselves.  This approach makes the rules simpler and more secure. By adhering to the design principles, we can create a maintainable, understandable, and scalable backend for the BookSwap application."
   }
 }
-
-    

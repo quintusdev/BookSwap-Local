@@ -13,9 +13,43 @@ import { Input } from '@/components/ui/input';
 import { allCities, mockBooks } from '@/lib/placeholder-data';
 import { Search } from 'lucide-react';
 import { useLanguage } from '@/context/language-context';
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BrowsePage() {
     const { t } = useLanguage();
+    const { user, isUserLoading } = useUser();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isUserLoading && !user) {
+        router.replace('/login?from=/browse');
+        }
+    }, [user, isUserLoading, router]);
+
+    if (isUserLoading || !user) {
+        return (
+             <div className="space-y-8">
+                 <div>
+                    <Skeleton className="h-10 w-1/3" />
+                    <Skeleton className="h-4 w-1/2 mt-2" />
+                </div>
+                 <div className="flex flex-col gap-4 md:flex-row">
+                    <Skeleton className="h-10 flex-grow" />
+                    <Skeleton className="h-10 w-full md:w-[200px]" />
+                </div>
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                        <Skeleton key={i} className="aspect-[2/3] w-full" />
+                    ))}
+                </div>
+             </div>
+        );
+    }
+
+
   return (
     <div className="space-y-8">
       <div>
