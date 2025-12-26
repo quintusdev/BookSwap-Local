@@ -419,6 +419,16 @@
             "type": "string"
           }
         },
+        "userNames": {
+            "type": "object",
+            "description": "A map of user IDs to user names for easy display.",
+            "additionalProperties": { "type": "string" }
+        },
+        "userAvatars": {
+            "type": "object",
+            "description": "A map of user IDs to avatar URLs for easy display.",
+            "additionalProperties": { "type": "string" }
+        },
         "lastMessage": {
           "type": "object",
           "description": "The last message sent in the chat, for preview purposes.",
@@ -429,11 +439,14 @@
             "timestamp": {
               "type": "string",
               "format": "date-time"
+            },
+            "senderId": {
+              "type": "string"
             }
           }
         }
       },
-      "required": ["id", "users"]
+      "required": ["id", "users", "userNames", "userAvatars"]
     },
     "ChatMessage": {
       "$schema": "http://json-schema.org/draft-07/schema#",
