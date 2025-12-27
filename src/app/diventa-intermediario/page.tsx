@@ -1,12 +1,92 @@
 
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowDown, CheckCircle, Heart, Users, Sparkles } from 'lucide-react';
+import { useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DiventaIntermediarioPage() {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const [businessName, setBusinessName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!businessName || !contactName || !email) {
+      toast({ variant: 'destructive', title: 'Per favore, compila tutti i campi.' });
+      return;
+    }
+    setIsSubmitting(true);
+    const adminEmail = 'marco.quintus.dev@gmail.com'; // Admin's email for internal notification
+
+    try {
+      const leadsCollection = collection(firestore, 'leads_partners');
+      const mailCollection = collection(firestore, 'mail');
+
+      // 1. Save partner lead
+      await addDocumentNonBlocking(leadsCollection, {
+        businessName,
+        contactName,
+        contactEmail: email,
+        city: 'N/A (da form esteso)',
+        status: 'pending_review',
+        source: 'diventa_intermediario_page',
+        createdAt: serverTimestamp(),
+      });
+
+      // 2. (Simulated Cloud Function) Create confirmation email for the partner
+      await addDocumentNonBlocking(mailCollection, {
+        to: [email],
+        message: {
+          subject: `Candidatura Ricevuta: ${businessName} per BookSwap Local`,
+          html: `
+            <p>Ciao ${contactName},</p>
+            <p>Abbiamo ricevuto la tua candidatura per diventare un Founding Partner di BookSwap Local. Grazie per il tuo interesse!</p>
+            <p>Valuteremo attentamente la tua richiesta e ti contatteremo personalmente su questa email entro 48 ore per approfondire la possibile collaborazione.</p>
+            <p>A presto,</p>
+            <p>Il team di BookSwap Local</p>
+          `,
+        },
+      });
+
+      // 3. (Simulated Cloud Function) Create internal notification email
+      await addDocumentNonBlocking(mailCollection, {
+        to: [adminEmail],
+        message: {
+          subject: `Nuova Candidatura Partner: ${businessName}`,
+          html: `
+            <p>Nuova candidatura per il programma Founding Partner dalla pagina dedicata.</p>
+            <ul>
+              <li><strong>Nome Locale:</strong> ${businessName}</li>
+              <li><strong>Nome Referente:</strong> ${contactName}</li>
+              <li><strong>Email Contatto:</strong> ${email}</li>
+            </ul>
+            <p>Ricontatta entro 48 ore.</p>
+          `,
+        },
+      });
+
+      toast({ title: 'Candidatura inviata!', description: 'Grazie! Ti abbiamo inviato un\'email di conferma.' });
+      setBusinessName('');
+      setContactName('');
+      setEmail('');
+    } catch (error) {
+      console.error("Error submitting partner form:", error);
+      toast({ variant: 'destructive', title: 'Qualcosa è andato storto', description: 'Non siamo riusciti a inviare la tua candidatura. Riprova più tardi.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+
   return (
     <div className="bg-background text-foreground">
       {/* Hero Section */}
@@ -121,22 +201,22 @@ export default function DiventaIntermediarioPage() {
             <p className="mt-2 text-muted-foreground">
               Compila il modulo. Valuteremo ogni richiesta e ti contatteremo personalmente entro 48 ore.
             </p>
-            <form className="mt-6 grid grid-cols-1 gap-4 text-left sm:grid-cols-2">
+            <form className="mt-6 grid grid-cols-1 gap-4 text-left sm:grid-cols-2" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="business-name">Nome del Locale</Label>
-                <Input id="business-name" placeholder="Es: Caffè Letterario" />
+                <Input id="business-name" placeholder="Es: Caffè Letterario" value={businessName} onChange={e => setBusinessName(e.target.value)} disabled={isSubmitting}/>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="contact-name">Nome del Referente</Label>
-                <Input id="contact-name" placeholder="Mario Rossi" />
+                <Input id="contact-name" placeholder="Mario Rossi" value={contactName} onChange={e => setContactName(e.target.value)} disabled={isSubmitting}/>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="email">Email di Contatto</Label>
-                <Input id="email" type="email" placeholder="contatti@caffeletterario.it" />
+                <Input id="email" type="email" placeholder="contatti@caffeletterario.it" value={email} onChange={e => setEmail(e.target.value)} disabled={isSubmitting}/>
               </div>
               <div className="sm:col-span-2">
-                <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
-                  Invia la mia candidatura
+                <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90" disabled={isSubmitting}>
+                  {isSubmitting ? 'Invio in corso...' : 'Invia la mia candidatura'}
                 </Button>
               </div>
             </form>
@@ -149,5 +229,3 @@ export default function DiventaIntermediarioPage() {
     </div>
   );
 }
-
-    

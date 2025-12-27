@@ -235,5 +235,39 @@ service cloud.firestore {
         allow delete: if isSuperAdmin();
       }
     }
+    
+    // --- RULES FOR EMAIL AND LEAD GENERATION ---
+    
+    /**
+     * @description Rules for the collection used by the "Trigger Email" extension.
+     * @path /mail/{docId}
+     * @allow No client-side access is allowed. Documents should only be created by backend services
+     * (e.g., Cloud Functions) in response to other events. This prevents users from sending emails arbitrarily.
+     */
+    match /mail/{docId} {
+        allow read, write, create, list, delete: if false;
+    }
+
+    /**
+     * @description Rules for reader leads collected from the landing page.
+     * @path /leads_readers/{docId}
+     * @allow Anyone can create a document (public form submission).
+     * @deny Reading, updating, or deleting is denied to all clients to protect user privacy.
+     */
+    match /leads_readers/{docId} {
+        allow create: if true;
+        allow read, update, delete, list: if false;
+    }
+
+    /**
+     * @description Rules for partner leads collected from landing pages.
+     * @path /leads_partners/{docId}
+     * @allow Anyone can create a document (public form submission).
+     * @deny Reading, updating, or deleting is denied to all clients to protect privacy.
+     */
+    match /leads_partners/{docId} {
+        allow create: if true;
+        allow read, update, delete, list: if false;
+    }
   }
 }

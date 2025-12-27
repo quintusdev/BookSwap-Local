@@ -5,9 +5,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import { BookHeart, Store, User, Building } from 'lucide-react';
+import { User, Building } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 type Choice = 'reader' | 'intermediary' | null;
 
@@ -16,58 +18,11 @@ export function IdentityChoiceForm() {
 
   const handleReset = () => setChoice(null);
 
-  const ReaderForm = () => (
-    <div className="w-full max-w-lg mx-auto text-left">
-      <h3 className="text-2xl font-bold text-center mb-2 font-sans">Sei dei nostri.</h3>
-      <p className="text-center text-stone-700 mb-6">
-        Lasciaci la tua email e la tua città. Ti avviseremo non appena BookSwap sarà attivo nella tua zona.
-      </p>
-      <form className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="reader-email" className="font-sans">La tua email</Label>
-          <Input id="reader-email" type="email" placeholder="mario.rossi@email.com" className="py-6 text-base font-sans" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="reader-city" className="font-sans">La tua città</Label>
-          <Input id="reader-city" type="text" placeholder="Es: Milano" className="py-6 text-base font-sans" />
-        </div>
-        <Button type="submit" size="lg" className="w-full bg-stone-800 hover:bg-stone-700 text-white rounded-full px-8 py-6 text-lg font-sans">
-          Avvisami
-        </Button>
-         <Button variant="link" size="sm" className="w-full text-stone-600 font-sans" onClick={handleReset}>
-            Torna alla scelta
-        </Button>
-      </form>
-    </div>
-  );
-
-  const IntermediaryForm = () => (
-    <div className="w-full max-w-lg mx-auto text-left">
-       <h3 className="text-2xl font-bold text-center mb-2 font-sans">Porta nuove persone nel tuo locale.</h3>
-      <p className="text-center text-stone-700 mb-6">
-        Candidati al nostro programma Founding Partner. È gratuito, senza vincoli e riservato ai primi 15 locali per città.
-      </p>
-       <form className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="business-name" className="font-sans">Nome del locale</Label>
-          <Input id="business-name" placeholder="Caffè Letterario" className="py-6 text-base font-sans"/>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="business-email" className="font-sans">Email di contatto</Label>
-          <Input id="business-email" type="email" placeholder="contatti@caffe.it" className="py-6 text-base font-sans"/>
-        </div>
-        <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg font-sans">
-          Invia la candidatura
-        </Button>
-         <Button variant="link" size="sm" className="w-full text-stone-600 font-sans" onClick={handleReset}>
-            Torna alla scelta
-        </Button>
-      </form>
-    </div>
-  );
-  
-  if (choice) {
-    return choice === 'reader' ? <ReaderForm /> : <IntermediaryForm />;
+  if (choice === 'reader') {
+    return <ReaderForm onBack={handleReset} />;
+  }
+  if (choice === 'intermediary') {
+    return <IntermediaryForm onBack={handleReset} />;
   }
 
   return (
@@ -105,3 +60,188 @@ export function IdentityChoiceForm() {
   );
 }
 
+
+function ReaderForm({ onBack }: { onBack: () => void }) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [email, setEmail] = useState('');
+    const [city, setCity] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email || !city) {
+            toast({ variant: 'destructive', title: 'Per favore, compila tutti i campi.' });
+            return;
+        }
+        setIsSubmitting(true);
+
+        const leadsCollection = collection(firestore, 'leads_readers');
+        const mailCollection = collection(firestore, 'mail');
+
+        try {
+            // 1. Save lead to Firestore
+            await addDocumentNonBlocking(leadsCollection, {
+                email,
+                city,
+                status: 'pending',
+                source: 'landing_page',
+                createdAt: serverTimestamp(),
+            });
+
+            // 2. (Simulated Cloud Function) Create email document
+            await addDocumentNonBlocking(mailCollection, {
+                to: [email],
+                message: {
+                    subject: 'Grazie per il tuo interesse in BookSwap Local!',
+                    html: `
+                        <p>Ciao!</p>
+                        <p>Grazie per esserti unito alla nostra community di lettori. Siamo felici di averti a bordo.</p>
+                        <p>Stiamo lavorando per portare BookSwap nella tua città (${city}) il prima possibile. Ti avviseremo non appena saremo pronti per partire.</p>
+                        <p>Nel frattempo, continua a leggere!</p>
+                        <p>Il team di BookSwap Local</p>
+                    `,
+                },
+            });
+
+            toast({ title: 'Grazie!', description: 'Ti abbiamo inviato un\'email di conferma. A presto!' });
+            setEmail('');
+            setCity('');
+        } catch (error) {
+            console.error("Error submitting reader form:", error);
+            toast({ variant: 'destructive', title: 'Qualcosa è andato storto', description: 'Non siamo riusciti a registrare il tuo interesse. Riprova più tardi.' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="w-full max-w-lg mx-auto text-left">
+        <h3 className="text-2xl font-bold text-center mb-2 font-sans">Sei dei nostri.</h3>
+        <p className="text-center text-stone-700 mb-6">
+            Lasciaci la tua email e la tua città. Ti avviseremo non appena BookSwap sarà attivo nella tua zona.
+        </p>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+            <Label htmlFor="reader-email" className="font-sans">La tua email</Label>
+            <Input id="reader-email" type="email" placeholder="mario.rossi@email.com" className="py-6 text-base font-sans" value={email} onChange={e => setEmail(e.target.value)} disabled={isSubmitting}/>
+            </div>
+            <div className="space-y-2">
+            <Label htmlFor="reader-city" className="font-sans">La tua città</Label>
+            <Input id="reader-city" type="text" placeholder="Es: Milano" className="py-6 text-base font-sans" value={city} onChange={e => setCity(e.target.value)} disabled={isSubmitting}/>
+            </div>
+            <Button type="submit" size="lg" className="w-full bg-stone-800 hover:bg-stone-700 text-white rounded-full px-8 py-6 text-lg font-sans" disabled={isSubmitting}>
+                {isSubmitting ? 'Invio in corso...' : 'Avvisami'}
+            </Button>
+            <Button variant="link" size="sm" className="w-full text-stone-600 font-sans" onClick={onBack}>
+                Torna alla scelta
+            </Button>
+        </form>
+        </div>
+    );
+}
+
+function IntermediaryForm({ onBack }: { onBack: () => void }) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [businessName, setBusinessName] = useState('');
+    const [email, setEmail] = useState('');
+    const [city, setCity] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!businessName || !email || !city) {
+            toast({ variant: 'destructive', title: 'Per favore, compila tutti i campi.' });
+            return;
+        }
+        setIsSubmitting(true);
+        const adminEmail = 'marco.quintus.dev@gmail.com'; // Admin's email for internal notification
+
+        try {
+            const leadsCollection = collection(firestore, 'leads_partners');
+            const mailCollection = collection(firestore, 'mail');
+
+            // 1. Save partner lead
+            await addDocumentNonBlocking(leadsCollection, {
+                businessName,
+                contactEmail: email,
+                city,
+                status: 'pending_review',
+                source: 'landing_page',
+                createdAt: serverTimestamp(),
+            });
+
+            // 2. (Simulated Cloud Function) Create confirmation email for the partner
+            await addDocumentNonBlocking(mailCollection, {
+                to: [email],
+                message: {
+                    subject: `Candidatura ${businessName} per BookSwap Local`,
+                    html: `
+                        <p>Ciao!</p>
+                        <p>Abbiamo ricevuto la tua candidatura per diventare un Founding Partner di BookSwap Local. Grazie per il tuo interesse!</p>
+                        <p>Valuteremo attentamente la tua richiesta e ti contatteremo personalmente su questa email entro 48 ore per approfondire la possibile collaborazione.</p>
+                        <p>A presto,</p>
+                        <p>Il team di BookSwap Local</p>
+                    `,
+                },
+            });
+
+            // 3. (Simulated Cloud Function) Create internal notification email
+            await addDocumentNonBlocking(mailCollection, {
+                to: [adminEmail],
+                message: {
+                    subject: `Nuova Candidatura Partner: ${businessName}`,
+                    html: `
+                        <p>Nuova candidatura per il programma Founding Partner.</p>
+                        <ul>
+                            <li><strong>Nome Locale:</strong> ${businessName}</li>
+                            <li><strong>Email Contatto:</strong> ${email}</li>
+                            <li><strong>Città:</strong> ${city}</li>
+                        </ul>
+                        <p>Ricontatta entro 48 ore.</p>
+                    `,
+                },
+            });
+
+            toast({ title: 'Candidatura inviata!', description: 'Grazie! Ti abbiamo inviato un\'email di conferma.' });
+            setBusinessName('');
+            setEmail('');
+            setCity('');
+        } catch (error) {
+             console.error("Error submitting partner form:", error);
+            toast({ variant: 'destructive', title: 'Qualcosa è andato storto', description: 'Non siamo riusciti a inviare la tua candidatura. Riprova più tardi.' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="w-full max-w-lg mx-auto text-left">
+        <h3 className="text-2xl font-bold text-center mb-2 font-sans">Porta nuove persone nel tuo locale.</h3>
+        <p className="text-center text-stone-700 mb-6">
+            Candidati al nostro programma Founding Partner. È gratuito, senza vincoli e riservato ai primi 15 locali per città.
+        </p>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+                <Label htmlFor="business-name" className="font-sans">Nome del locale</Label>
+                <Input id="business-name" placeholder="Caffè Letterario" className="py-6 text-base font-sans" value={businessName} onChange={e => setBusinessName(e.target.value)} disabled={isSubmitting}/>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="business-email" className="font-sans">Email di contatto</Label>
+                <Input id="business-email" type="email" placeholder="contatti@caffe.it" className="py-6 text-base font-sans" value={email} onChange={e => setEmail(e.target.value)} disabled={isSubmitting}/>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="partner-city" className="font-sans">Città</Label>
+                <Input id="partner-city" type="text" placeholder="Es: Firenze" className="py-6 text-base font-sans" value={city} onChange={e => setCity(e.target.value)} disabled={isSubmitting}/>
+            </div>
+            <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg font-sans" disabled={isSubmitting}>
+                {isSubmitting ? 'Invio in corso...' : 'Invia la candidatura'}
+            </Button>
+            <Button variant="link" size="sm" className="w-full text-stone-600 font-sans" onClick={onBack}>
+                Torna alla scelta
+            </Button>
+        </form>
+        </div>
+    );
+}
