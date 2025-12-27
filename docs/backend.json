@@ -23,7 +23,7 @@
         "role": {
           "type": "string",
           "description": "Role of the user (reader, shop, superadmin, or professional).",
-          "enum": ["reader", "shop", "superadmin", "professional"]
+          "enum": ["reader", "intermediary", "admin"]
         },
         "userType": {
           "type": "string",
@@ -81,6 +81,10 @@
             "type": "array",
             "description": "Badges earned by the user at specific hubs.",
             "items": { "type": "string" }
+        },
+        "locationId": {
+          "type": "string",
+          "description": "The ID of the location this intermediary user manages. Only present for role 'intermediary'."
         }
       },
       "required": [
@@ -102,6 +106,7 @@
             "name": { "type": "string" },
             "address": { "type": "string" },
             "city": { "type": "string" },
+            "status": { "type": "string", "enum": ["active", "pending", "suspended"]},
             "location": {
                 "type": "object",
                 "properties": {
@@ -109,12 +114,32 @@
                     "lng": { "type": "number" }
                 }
             },
+            "subscription": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "enum": ["active", "past_due", "canceled", "paused"]},
+                "renewAt": {"type": "string", "format": "date-time"}
+              }
+            },
+            "milestoneLevel": { "type": "number" },
+            "qrToken": { "type": "string" },
             "totalSwaps": { "type": "number", "description": "Total verified swaps at this location." },
             "monthlySwaps": { "type": "number", "description": "Verified swaps in the current month." },
             "currentMilestone": { "type": "string", "description": "The latest milestone achieved." },
-            "qrCodeUrl": { "type": "string", "description": "URL to the static QR code image." }
+            "qrCodeUrl": { "type": "string", "description": "URL to the static QR code image." },
+            "metrics": {
+              "type": "object",
+              "properties": {
+                "swapTotal": { "type": "number"},
+                "swap30d": { "type": "number"},
+                "swapToday": { "type": "number"},
+                "uniqueUsers30d": { "type": "number"},
+                "returningUsers30d": { "type": "number"},
+                "confirmRate": { "type": "number"}
+              }
+            }
         },
-        "required": ["id", "ownerId", "name", "address", "city"]
+        "required": ["id", "ownerId", "name", "address", "city", "status"]
     },
     "Book": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -259,17 +284,13 @@
             "description": "An array containing the UIDs of both participants for easy querying.",
             "items": { "type": "string" }
         },
-        "swapCode": {
+        "code": {
           "type": "string",
           "description": "Unique code for the swap transaction."
         },
-        "checkInLibraryId": {
-          "type": "string",
-          "description": "Reference to User (Shop) where the swap was checked in.  Null if not yet checked in."
-        },
         "status": {
           "type": "string",
-          "description": "Status of the swap (e.g., pending, accepted, completed, cancelled)."
+          "description": "Status of the swap (e.g., pending, accepted, completed, cancelled, confirmed, expired)."
         },
         "locationId": {
             "type": "string",
@@ -278,7 +299,12 @@
         "locationName": {
             "type": "string",
             "description": "Name of the location (denormalized)."
-        }
+        },
+        "createdAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "confirmedAt": {"type": "string", "format": "date-time"},
+        "confirmedBy": {"type": "string"},
+        "attempts": {"type": "number"}
       },
       "required": [
         "id",
@@ -287,9 +313,40 @@
         "bookOwnerId",
         "wishlistOwnerId",
         "participantIds",
-        "swapCode",
-        "status"
+        "code",
+        "status",
+        "locationId"
       ]
+    },
+    "Event": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Event",
+      "type": "object",
+      "description": "Represents an event hosted by a location.",
+      "properties": {
+        "id": {"type": "string"},
+        "locationId": {"type": "string"},
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "startAt": {"type": "string", "format": "date-time"},
+        "status": {"type": "string", "enum": ["draft", "published", "canceled"]},
+        "createdAt": {"type": "string", "format": "date-time"}
+      },
+      "required": ["id", "locationId", "title", "startAt", "status"]
+    },
+     "RewardClaim": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RewardClaim",
+      "type": "object",
+      "description": "Represents a claim for a reward by a location.",
+      "properties": {
+        "id": {"type": "string"},
+        "locationId": {"type": "string"},
+        "rewardId": {"type": "string"},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "status": {"type": "string", "enum": ["pending", "approved", "rejected"]}
+      },
+      "required": ["id", "locationId", "rewardId", "createdAt", "status"]
     },
     "Review": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -552,6 +609,22 @@
               "description": "The unique identifier for the swap."
             }
           ]
+        }
+      },
+       {
+        "path": "/events/{eventId}",
+        "definition": {
+          "entityName": "Event",
+          "schema": { "$ref": "#/backend/entities/Event" },
+          "description": "Events hosted by locations."
+        }
+      },
+       {
+        "path": "/reward_claims/{claimId}",
+        "definition": {
+          "entityName": "RewardClaim",
+          "schema": { "$ref": "#/backend/entities/RewardClaim" },
+          "description": "Claims for rewards by locations."
         }
       },
       {

@@ -1,28 +1,4 @@
 
-/**
- * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated content
- * such as their profile, books, wishlist, and swap passes are stored in subcollections under their
- * unique user ID (`/users/{userId}`). Access is strictly limited to the authenticated owner of that data tree.
- * A `superadmin` role is defined, which bypasses most ownership checks for administrative purposes.
- *
- * Data Structure: User-specific data is hierarchically organized under `/users/{userId}`. Shared or
- * transactional data, like `/books`, `/swaps`, `/chats`, and `/libraryTransactions`, are placed in top-level collections.
- * This structural segregation simplifies security rules and improves query performance.
- *
- * Key Security Decisions:
- * - User Listing Restricted: By default, users cannot list all other users. This is overridden for `superadmin`.
- * - Private Data Isolation: Top-level collections like `/swaps`, `/chats`, and `/libraryTransactions` that contain
- *   sensitive data shared between specific users are not listable, except by a `superadmin`. Individual documents
- *   can only be accessed by authorized participants.
- * - Path-Based Security: For all data under `/users/{userId}`, authorization is primarily determined
- *   by matching the `userId` in the path with the requester's authenticated UID, or by being a `superadmin`.
- *
- * Denormalization for Authorization: To ensure performant and secure access control, this ruleset
- * relies on denormalized data. Most critically, documents in the `/swaps` and `/chats` collections MUST contain
- * the UIDs of all participants (e.g., `bookOwnerId`, `wishlistOwnerId` in `/swaps`, or a `users` array in `/chats`).
- * This avoids slow and costly cross-collection `get()` calls during rule evaluation and is essential for securing shared data.
- *
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -30,241 +6,133 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
     // Helper Functions
     // ------------------------------------------------------------------------
-
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
-    
-    /**
-     * Checks if the current user has the 'superadmin' role.
-     * This relies on a 'role' field in the user's profile document.
-     */
-    function isSuperAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-    }
-    
-    /**
-     * Checks if the current user has a professional role ('shop' or 'professional').
-     */
-     function isProfessional() {
-        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-        return isSignedIn() && (userRole == 'shop' || userRole == 'professional');
-     }
 
-    /**
-     * Checks if the authenticated user's ID matches the provided userId.
-     * This is the core of the user-ownership model.
-     */
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+
+    function isRole(userId, role) {
+      return isSignedIn() && getUserRole(userId) == role;
+    }
+
+    function isOneOfRoles(userId, roles) {
+      return isSignedIn() && getUserRole(userId) in roles;
+    }
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
-    /**
-     * A more robust check for update/delete operations, ensuring the document
-     * exists before attempting to modify it and that the user is the owner.
-     * Superadmins can also perform these operations.
-     */
-    function isExistingOwnerOrAdmin(userId) {
-      return (isOwner(userId) && resource != null) || isSuperAdmin();
+    
+    function isOwnerOrAdmin(userId) {
+        return isOwner(userId) || isRole(request.auth.uid, 'admin');
     }
 
-    /**
-     * Validates that the document being created has an 'id' field that
-     * matches the document's ID, which is the user's UID.
-     * Enforces consistency for a user's root profile document.
-     */
-    function isCreatingOwnProfile(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    /**
-     * Validates that a document being created in a user's subcollection
-     * has a 'userId' field that correctly points back to the parent user.
-     * Enforces relational integrity.
-     */
-    function isCreatingOwnSubdocument(userId) {
-      return request.resource.data.userId == userId;
-    }
-
-    /**
-     * Enforces immutability for critical relational ID fields during an update,
-     * preventing re-assignment of ownership. Superadmins can bypass this.
-     */
-    function isUserIdImmutable() {
-      return request.resource.data.userId == resource.data.userId || isSuperAdmin();
-    }
-
-    /**
-     * Enforces immutability for the root user profile's 'id' field.
-     * Superadmins can bypass this.
-     */
-    function isProfileIdImmutable() {
-      return request.resource.data.id == resource.data.id || isSuperAdmin();
+    function isIntermediaryOrAdmin() {
+        return isOneOfRoles(request.auth.uid, ['intermediary', 'admin']);
     }
     
-    /**
-    * Security function to verify that counter increments are valid.
-    * Allows a field to be incremented only by 1.
-    */
-    function isIncrementingByOne(fieldName) {
-      return request.resource.data[fieldName] == resource.data[fieldName] + 1;
+    function isIntermediaryOfLocation(locationId) {
+        let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+        return isRole(request.auth.uid, 'intermediary') && userData.locationId == locationId;
     }
     
+    function isIntermediaryOfLocationOrAdmin(locationId) {
+        return isIntermediaryOfLocation(locationId) || isRole(request.auth.uid, 'admin');
+    }
 
     // ------------------------------------------------------------------------
     // Collection Rules
     // ------------------------------------------------------------------------
-
-    /**
-     * @description Rules for user profile documents.
-     * @path /users/{userId}
-     * @allow A user can read/update their own profile. Superadmin has full access.
-     * @allow Creation is allowed if the user is creating their own profile document.
-     */
+    
     match /users/{userId} {
-      allow get, update: if isOwner(userId) || isSuperAdmin();
-      allow list: if isSuperAdmin();
-      allow create: if isOwner(userId) && isCreatingOwnProfile(userId);
-      allow delete: if isSuperAdmin();
+      allow read, write: if isOwnerOrAdmin(userId);
+      allow list: if isRole(request.auth.uid, 'admin');
     }
     
-    /**
-     * @description Rules for intermediary locations (BookSwap Hubs).
-     * @path /locations/{locationId}
-     */
     match /locations/{locationId} {
-      allow read: if isSignedIn(); // Publicly readable for map display
-      allow write: if isProfessional() && isOwner(locationId) || isSuperAdmin();
-      
-      // Rule to safely increment counters via a transaction/batched write.
-      // This prevents clients from setting arbitrary values.
-      allow update: if (isProfessional() && isOwner(locationId)) &&
-                      (isIncrementingByOne('totalSwaps') || isIncrementingByOne('monthlySwaps'));
+      // Any signed-in user can view location details.
+      allow get: if isSignedIn();
+      // Only the assigned intermediary or an admin can read the full doc / list.
+      // This is important for protecting sensitive metrics or settings.
+      allow read, list: if isIntermediaryOfLocationOrAdmin(locationId);
+      // Only the assigned intermediary or an admin can update (limited fields).
+      allow update: if isIntermediaryOfLocationOrAdmin(locationId)
+                      && request.resource.data.keys().hasOnly(['name', 'address', 'city', 'location', 'qrToken']); // Example limited fields
+      allow create, delete: if isRole(request.auth.uid, 'admin');
     }
 
-    /**
-     * @description Rules for the global books collection.
-     * @path /books/{bookId}
-     * @allow Authenticated users can read any book.
-     * @allow A user can create a book and write to books they own. A superadmin can write to any book.
-     * @deny Anonymous users cannot read. Users cannot write to books they don't own.
-     * @principle Enables a global browse experience while restricting modifications to the owner.
-     */
     match /books/{bookId} {
         allow read: if isSignedIn();
-        allow create: if isOwner(request.resource.data.ownerId) || isSuperAdmin();
-        allow update, delete: if isOwner(resource.data.ownerId) || isSuperAdmin();
+        allow create: if isOwner(request.resource.data.ownerId) || isRole(request.auth.uid, 'admin');
+        allow update, delete: if isOwner(resource.data.ownerId) || isRole(request.auth.uid, 'admin');
     }
 
-
-    /**
-     * @description Rules for a user's personal wishlist.
-     * @path /users/{userId}/wishlist/{wishlistItemId}
-     */
     match /users/{userId}/wishlist/{wishlistItemId} {
-      allow read, write: if isOwner(userId) || isSuperAdmin();
-       allow create: if (isOwner(userId) && isCreatingOwnSubdocument(userId)) || isSuperAdmin();
+      allow read, write: if isOwnerOrAdmin(userId);
     }
 
-    /**
-     * @description Rules for a user's swap pass subscriptions.
-     * @path /users/{userId}/swapPasses/{swapPassId}
-     */
     match /users/{userId}/swapPasses/{swapPassId} {
-      allow read, write: if isOwner(userId) || isSuperAdmin();
-       allow create: if (isOwner(userId) && isCreatingOwnSubdocument(userId)) || isSuperAdmin();
+      allow read, write: if isOwnerOrAdmin(userId);
     }
 
-    /**
-     * @description Rules for swap transaction documents.
-     * @path /swaps/{swapId}
-     */
     match /swaps/{swapId} {
-      allow get: if (isSignedIn() && request.auth.uid in resource.data.participantIds) || isSuperAdmin();
-      allow list: if isSuperAdmin();
-      allow create: if (isSignedIn() && request.auth.uid == request.resource.data.wishlistOwnerId) || isSuperAdmin();
-      // Only participants can update status (e.g., to 'accepted' or 'completed')
-      allow update: if (isSignedIn() && request.auth.uid in resource.data.participantIds);
-      allow delete: if isSuperAdmin();
+      // Participants and the intermediary of the location can get the swap. Admins can too.
+      allow get: if (isSignedIn() && (request.auth.uid in resource.data.participantIds || isIntermediaryOfLocation(resource.data.locationId))) || isRole(request.auth.uid, 'admin');
+      // Intermediaries can list swaps for their location. Admins can list all.
+      allow list: if isIntermediaryOrAdmin();
+      allow create: if (isSignedIn() && request.auth.uid == request.resource.data.wishlistOwnerId);
+      // Users can accept/cancel. Intermediaries CANNOT update status directly (must use Cloud Function).
+      allow update: if (isSignedIn() && request.auth.uid in resource.data.participantIds)
+                    && !("status" in request.resource.data.diff(resource.data).affectedKeys());
+      allow delete: if isRole(request.auth.uid, 'admin');
     }
     
-    /**
-     * @description Rules for review documents.
-     * @path /reviews/{reviewId}
-     */
+    match /events/{eventId} {
+      // Publicly readable
+      allow get, list: if isSignedIn();
+      // Intermediary can manage events for their location
+      allow create: if isIntermediaryOfLocation(request.resource.data.locationId);
+      allow update, delete: if isIntermediaryOfLocation(resource.data.locationId);
+    }
+    
+    match /reward_claims/{claimId} {
+        allow create: if isIntermediaryOfLocation(request.resource.data.locationId);
+        allow read, list: if isIntermediaryOfLocation(resource.data.locationId) || isRole(request.auth.uid, 'admin');
+        allow update, delete: if isRole(request.auth.uid, 'admin');
+    }
+
     match /reviews/{reviewId} {
-        allow get, list: if true; // Publicly readable to build trust
+        allow get, list: if true;
         allow create: if isSignedIn() && request.auth.uid == request.resource.data.reviewerId;
-        allow update: if false; // Reviews are immutable
-        allow delete: if isSuperAdmin();
+        allow update: if false; // Immutable
+        allow delete: if isRole(request.auth.uid, 'admin');
     }
 
-    /**
-     * @description Rules for transaction records for library partners.
-     * @path /libraryTransactions/{libraryTransactionId}
-     */
-    match /libraryTransactions/{libraryTransactionId} {
-      // Only the library/shop itself or a superadmin can manage transactions.
-      allow read, write: if (isProfessional() && resource.data.libraryId == request.auth.uid) || isSuperAdmin();
-      allow list: if isSuperAdmin();
-      allow create: if (isProfessional() && request.resource.data.libraryId == request.auth.uid) || isSuperAdmin();
-    }
-
-    /**
-     * @description Rules for chat documents.
-     * @path /chats/{chatId}
-     */
     match /chats/{chatId} {
-      // Only participants of the chat can access it.
       allow get, update, create: if isSignedIn() && request.auth.uid in resource.data.users;
-      allow list: if isSuperAdmin();
+      allow list: if isRole(request.auth.uid, 'admin');
 
-       /**
-       * @description Rules for messages within a chat.
-       * @path /chats/{chatId}/messages/{messageId}
-       */
       match /messages/{messageId} {
-        // Participants can list/get messages.
         allow list, get: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
-        // A participant can create a message. System messages are also allowed.
         allow create: if isSignedIn() && (request.auth.uid == request.resource.data.senderId || request.resource.data.senderId == 'system') && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
-        allow update: if false; // Messages are immutable for users
-        allow delete: if isSuperAdmin();
+        allow update: if false; // Immutable
+        allow delete: if isRole(request.auth.uid, 'admin');
       }
     }
     
     // --- RULES FOR EMAIL AND LEAD GENERATION ---
-    
-    /**
-     * @description Rules for the collection used by the "Trigger Email" extension.
-     * @path /mail/{docId}
-     * @allow No client-side access is allowed. Documents should only be created by backend services
-     * (e.g., Cloud Functions) in response to other events. This prevents users from sending emails arbitrarily.
-     */
     match /mail/{docId} {
         allow read, write, create, list, delete: if false;
     }
 
-    /**
-     * @description Rules for reader leads collected from the landing page.
-     * @path /leads_readers/{docId}
-     * @allow Anyone can create a document (public form submission).
-     * @deny Reading, updating, or deleting is denied to all clients to protect user privacy.
-     */
     match /leads_readers/{docId} {
         allow create: if true;
         allow read, update, delete, list: if false;
     }
 
-    /**
-     * @description Rules for partner leads collected from landing pages.
-     * @path /leads_partners/{docId}
-     * @allow Anyone can create a document (public form submission).
-     * @deny Reading, updating, or deleting is denied to all clients to protect privacy.
-     */
     match /leads_partners/{docId} {
         allow create: if true;
         allow read, update, delete, list: if false;

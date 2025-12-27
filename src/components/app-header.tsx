@@ -37,7 +37,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/language-context';
-import { useAuth, useUser, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useAuth, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
@@ -47,7 +47,7 @@ type UserProfile = {
   name?: string;
   email?: string;
   avatarUrl?: string;
-  role?: 'reader' | 'shop' | 'superadmin';
+  role?: 'reader' | 'intermediary' | 'admin';
 }
 
 export function AppHeader() {
@@ -64,21 +64,9 @@ export function AppHeader() {
 
   const { data: userProfile } = useDoc<UserProfile>(userDocRef);
   
-  const [userRole, setUserRole] = useState(userProfile?.role || 'reader');
   const { t, setLanguage } = useLanguage();
 
-  useEffect(() => {
-    if (userProfile?.role) {
-      setUserRole(userProfile.role);
-    }
-  }, [userProfile]);
-
-  const handleRoleChange = (newRole: 'reader' | 'shop' | 'superadmin') => {
-    setUserRole(newRole);
-    if(userDocRef) {
-        setDocumentNonBlocking(userDocRef, { role: newRole }, { merge: true });
-    }
-  }
+  const isIntermediary = userProfile?.role === 'intermediary' || userProfile?.role === 'admin';
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -93,6 +81,10 @@ export function AppHeader() {
     { href: '/swaps', label: t('swaps'), icon: Repeat },
     { href: '/chat', label: t('chat'), icon: MessageSquare },
   ];
+  
+  if (isIntermediary) {
+      navLinks.push({ href: '/hub', label: 'Hub', icon: LayoutDashboard });
+  }
 
   const NavLink = ({ href, label, icon: Icon }: (typeof navLinks)[0]) => {
     const isActive = pathname.startsWith(href);
@@ -156,11 +148,11 @@ export function AppHeader() {
             <span>{t('profile')}</span>
           </Link>
         </DropdownMenuItem>
-        {(userRole === 'shop' || userRole === 'superadmin') && (
+        {isIntermediary && (
           <DropdownMenuItem asChild>
-            <Link href="/dashboard">
+            <Link href="/hub">
               <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>{t('shop_dashboard')}</span>
+              <span>BookSwap Hub</span>
             </Link>
           </DropdownMenuItem>
         )}
@@ -232,13 +224,6 @@ export function AppHeader() {
         </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          {userProfile?.role && <div className='text-sm text-muted-foreground'>
-            <select value={userRole} onChange={(e) => handleRoleChange(e.target.value as any)} className='ml-1 bg-transparent border rounded-md p-1'>
-                <option value="reader">User</option>
-                <option value="shop">Shop</option>
-                <option value="superadmin">Superadmin</option>
-            </select>
-          </div>}
           <UserMenu />
         </div>
       </div>
