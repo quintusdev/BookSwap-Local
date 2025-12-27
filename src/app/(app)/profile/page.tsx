@@ -33,10 +33,11 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Check, ChevronsUpDown, X, Star } from 'lucide-react';
+import { Check, ChevronsUpDown, X, Star, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { bookGenres } from '@/lib/placeholder-data';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 
 type UserProfile = {
@@ -47,6 +48,7 @@ type UserProfile = {
     subscription: 'Free' | 'Pro' | 'Collector';
     avatarUrl: string;
     favoriteGenres?: string[];
+    localCounters?: { [key: string]: number };
 }
 
 const profileSchema = z.object({
@@ -58,6 +60,15 @@ const passwordSchema = z.object({
     currentPassword: z.string().min(6),
     newPassword: z.string().min(6),
 })
+
+// --- Dati di Esempio per l'utente ---
+const userMilestoneStats = {
+    locationName: "The Reader's Corner",
+    swapCount: 8,
+    currentMilestone: { name: 'Nuovo Arrivato', threshold: 0 },
+    nextMilestone: { name: 'Reader Locale', threshold: 10, icon: Award },
+    activeBenefits: ["Badge 'Nuovo Arrivato'"],
+};
 
 
 export default function ProfilePage() {
@@ -76,6 +87,8 @@ export default function ProfilePage() {
     const form = useForm<z.infer<typeof profileSchema>>({
         resolver: zodResolver(profileSchema),
     });
+    
+    const progressToNextMilestone = (userMilestoneStats.swapCount / userMilestoneStats.nextMilestone.threshold) * 100;
 
     useEffect(() => {
         if (userProfile) {
@@ -126,7 +139,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-3">
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 space-y-8">
             <Card>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onProfileSubmit)}>
@@ -172,11 +185,38 @@ export default function ProfilePage() {
                     </form>
                 </Form>
             </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle className='flex items-center gap-2'>
+                        <userMilestoneStats.nextMilestone.icon className='h-6 w-6 text-primary' />
+                        I Tuoi Progressi
+                    </CardTitle>
+                    <CardDescription>
+                        Raggiungi {userMilestoneStats.nextMilestone.threshold} scambi presso "{userMilestoneStats.locationName}" per sbloccare il badge {userMilestoneStats.nextMilestone.name}!
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center mb-2">
+                        <div className="inline-flex items-center gap-2 rounded-full border bg-muted px-3 py-1">
+                            <userMilestoneStats.nextMilestone.icon className="h-5 w-5 text-muted-foreground" />
+                             <span className="text-sm font-semibold text-muted-foreground">{userMilestoneStats.currentMilestone.name}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Progress value={progressToNextMilestone} className="flex-1 h-3" />
+                        <span className='font-bold text-lg'>{userMilestoneStats.swapCount} / {userMilestoneStats.nextMilestone.threshold}</span>
+                    </div>
+                     <div className="mt-4 flex justify-center">
+                        <Badge>{userMilestoneStats.activeBenefits[0]}</Badge>
+                     </div>
+                </CardContent>
+              </Card>
             
             <GenreManager userProfile={userProfile} userDocRef={userDocRef} />
 
 
-             <Card className='mt-8'>
+             <Card>
                 <CardHeader>
                     <CardTitle>{t('profile_password_title')}</CardTitle>
                     <CardDescription>
@@ -262,7 +302,7 @@ function GenreManager({ userProfile, userDocRef }: { userProfile: UserProfile, u
     }
 
     return (
-        <Card className="mt-8">
+        <Card>
             <CardHeader>
                 <CardTitle>{t('profile_genres_title')}</CardTitle>
                 <CardDescription>{t('profile_genres_desc')}</CardDescription>
@@ -334,3 +374,4 @@ function GenrePicker({ selectedGenres, onGenreToggle }: { selectedGenres: string
     </Popover>
   );
 }
+
