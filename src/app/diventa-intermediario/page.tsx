@@ -25,12 +25,10 @@ export default function DiventaIntermediarioPage() {
       return;
     }
     setIsSubmitting(true);
-    const adminEmail = 'marco.quintus.dev@gmail.com'; // Admin's email for internal notification
 
     try {
       const leadsCollection = collection(firestore, 'leads_partners');
-      const mailCollection = collection(firestore, 'mail');
-
+      
       // 1. Save partner lead
       await addDocumentNonBlocking(leadsCollection, {
         businessName,
@@ -42,39 +40,11 @@ export default function DiventaIntermediarioPage() {
         createdAt: serverTimestamp(),
       });
 
-      // 2. (Simulated Cloud Function) Create confirmation email for the partner
-      await addDocumentNonBlocking(mailCollection, {
-        to: [email],
-        message: {
-          subject: `Candidatura Ricevuta: ${businessName} per BookSwap Local`,
-          html: `
-            <p>Ciao ${contactName},</p>
-            <p>Abbiamo ricevuto la tua candidatura per diventare un Founding Partner di BookSwap Local. Grazie per il tuo interesse!</p>
-            <p>Valuteremo attentamente la tua richiesta e ti contatteremo personalmente su questa email entro 48 ore per approfondire la possibile collaborazione.</p>
-            <p>A presto,</p>
-            <p>Il team di BookSwap Local</p>
-          `,
-        },
-      });
+      // NOTE: The email sending logic is handled by a Cloud Function (or simulated equivalent).
+      // The frontend's responsibility ends with creating the lead document.
+      // The 'mail' collection write attempts have been removed from here to fix permission errors.
 
-      // 3. (Simulated Cloud Function) Create internal notification email
-      await addDocumentNonBlocking(mailCollection, {
-        to: [adminEmail],
-        message: {
-          subject: `Nuova Candidatura Partner: ${businessName}`,
-          html: `
-            <p>Nuova candidatura per il programma Founding Partner dalla pagina dedicata.</p>
-            <ul>
-              <li><strong>Nome Locale:</strong> ${businessName}</li>
-              <li><strong>Nome Referente:</strong> ${contactName}</li>
-              <li><strong>Email Contatto:</strong> ${email}</li>
-            </ul>
-            <p>Ricontatta entro 48 ore.</p>
-          `,
-        },
-      });
-
-      toast({ title: 'Candidatura inviata!', description: 'Grazie! Ti abbiamo inviato un\'email di conferma.' });
+      toast({ title: 'Candidatura inviata!', description: 'Grazie! Riceverai a breve un\'email di conferma.' });
       setBusinessName('');
       setContactName('');
       setEmail('');

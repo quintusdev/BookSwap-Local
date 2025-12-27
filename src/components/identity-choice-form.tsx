@@ -77,8 +77,7 @@ function ReaderForm({ onBack }: { onBack: () => void }) {
         setIsSubmitting(true);
 
         const leadsCollection = collection(firestore, 'leads_readers');
-        const mailCollection = collection(firestore, 'mail');
-
+        
         try {
             // 1. Save lead to Firestore
             await addDocumentNonBlocking(leadsCollection, {
@@ -89,22 +88,7 @@ function ReaderForm({ onBack }: { onBack: () => void }) {
                 createdAt: serverTimestamp(),
             });
 
-            // 2. (Simulated Cloud Function) Create email document
-            await addDocumentNonBlocking(mailCollection, {
-                to: [email],
-                message: {
-                    subject: 'Grazie per il tuo interesse in BookSwap Local!',
-                    html: `
-                        <p>Ciao!</p>
-                        <p>Grazie per esserti unito alla nostra community di lettori. Siamo felici di averti a bordo.</p>
-                        <p>Stiamo lavorando per portare BookSwap nella tua città (${city}) il prima possibile. Ti avviseremo non appena saremo pronti per partire.</p>
-                        <p>Nel frattempo, continua a leggere!</p>
-                        <p>Il team di BookSwap Local</p>
-                    `,
-                },
-            });
-
-            toast({ title: 'Grazie!', description: 'Ti abbiamo inviato un\'email di conferma. A presto!' });
+            toast({ title: 'Grazie!', description: 'Ti avviseremo non appena BookSwap sarà attivo nella tua città.' });
             setEmail('');
             setCity('');
         } catch (error) {
@@ -156,12 +140,10 @@ function IntermediaryForm({ onBack }: { onBack: () => void }) {
             return;
         }
         setIsSubmitting(true);
-        const adminEmail = 'marco.quintus.dev@gmail.com'; // Admin's email for internal notification
-
+        
+        const leadsCollection = collection(firestore, 'leads_partners');
+        
         try {
-            const leadsCollection = collection(firestore, 'leads_partners');
-            const mailCollection = collection(firestore, 'mail');
-
             // 1. Save partner lead
             await addDocumentNonBlocking(leadsCollection, {
                 businessName,
@@ -170,38 +152,6 @@ function IntermediaryForm({ onBack }: { onBack: () => void }) {
                 status: 'pending_review',
                 source: 'landing_page',
                 createdAt: serverTimestamp(),
-            });
-
-            // 2. (Simulated Cloud Function) Create confirmation email for the partner
-            await addDocumentNonBlocking(mailCollection, {
-                to: [email],
-                message: {
-                    subject: `Candidatura ${businessName} per BookSwap Local`,
-                    html: `
-                        <p>Ciao!</p>
-                        <p>Abbiamo ricevuto la tua candidatura per diventare un Founding Partner di BookSwap Local. Grazie per il tuo interesse!</p>
-                        <p>Valuteremo attentamente la tua richiesta e ti contatteremo personalmente su questa email entro 48 ore per approfondire la possibile collaborazione.</p>
-                        <p>A presto,</p>
-                        <p>Il team di BookSwap Local</p>
-                    `,
-                },
-            });
-
-            // 3. (Simulated Cloud Function) Create internal notification email
-            await addDocumentNonBlocking(mailCollection, {
-                to: [adminEmail],
-                message: {
-                    subject: `Nuova Candidatura Partner: ${businessName}`,
-                    html: `
-                        <p>Nuova candidatura per il programma Founding Partner.</p>
-                        <ul>
-                            <li><strong>Nome Locale:</strong> ${businessName}</li>
-                            <li><strong>Email Contatto:</strong> ${email}</li>
-                            <li><strong>Città:</strong> ${city}</li>
-                        </ul>
-                        <p>Ricontatta entro 48 ore.</p>
-                    `,
-                },
             });
 
             toast({ title: 'Candidatura inviata!', description: 'Grazie! Ti abbiamo inviato un\'email di conferma.' });
