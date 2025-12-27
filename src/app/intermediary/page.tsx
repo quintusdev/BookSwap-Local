@@ -122,7 +122,7 @@ export default function IntermediaryPage() {
                         ))}
                     </ul>
                     <Button asChild size="lg" className="mt-8 w-full bg-primary hover:bg-primary/90">
-                        <Link href="/intermediary/register">Inizia la Prova Gratuita</Link>
+                        <Link href="/intermediary/register">Inizia la Prova Gratuita e Attiva l'Abbonamento</Link>
                     </Button>
                 </div>
             </div>

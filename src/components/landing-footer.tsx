@@ -21,6 +21,9 @@ export function LandingFooter() {
           <Link href="/privacy" className="transition-colors hover:text-foreground">
             {t('footer_privacy')}
           </Link>
+           <Link href="/support-us" className="transition-colors hover:text-foreground">
+            Supportaci
+          </Link>
         </nav>
       </div>
     </footer>
