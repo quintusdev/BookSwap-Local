@@ -119,7 +119,8 @@ Le **biblioteche** rappresentano un partner culturale di immenso valore, ma il l
 
 🚧 Stato del progetto
 
-In sviluppo attivo. La priorità è consolidare il modello con gli intermediari commerciali per poi espandere la base utenti. L'ordine non è negoziabile: prima i luoghi, poi le persone.
+In sviluppo attivo. La priorità è consolidare il modello con gli intermediari commerciali per poi espandere la base utenti. 
+L'ordine non è negoziabile: prima i luoghi, poi le persone.
 
 👤 Autore
 
