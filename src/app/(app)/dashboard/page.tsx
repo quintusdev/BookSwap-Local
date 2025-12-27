@@ -34,9 +34,8 @@ const hubStats = {
         { name: mockUsers[1].name, swaps: 5, avatar: mockUsers[1].avatar.imageUrl },
         { name: mockUsers[3].name, swaps: 3, avatar: mockUsers[3].avatar?.imageUrl || '' },
     ],
-    currentMilestone: { name: 'Punto Attivo', threshold: 10 },
-    nextMilestone: { name: 'Hub di Comunità', threshold: 50 },
-    activeBenefits: ['Maggiore visibilità sulla mappa'],
+    currentMilestone: { name: 'Punto Attivo', threshold: 10, icon: Award },
+    nextMilestone: { name: 'Hub di Comunità', threshold: 50, icon: Star },
 };
 
 const completedSwaps = mockSwaps.filter((s) => s.status === 'completed');
@@ -63,7 +62,7 @@ export default function DashboardPage() {
       <Card className="border-2 border-primary/50">
         <CardHeader>
             <CardTitle className='flex items-center gap-2'>
-                <Award className='h-6 w-6 text-primary' />
+                <hubStats.nextMilestone.icon className='h-6 w-6 text-primary' />
                 Prossima Ricompensa: {hubStats.nextMilestone.name}
             </CardTitle>
             <CardDescription>
@@ -71,13 +70,20 @@ export default function DashboardPage() {
             </CardDescription>
         </CardHeader>
         <CardContent>
+            <div className="flex justify-between items-center mb-2">
+                <div className='flex items-center gap-2'>
+                    <hubStats.currentMilestone.icon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-muted-foreground">{hubStats.currentMilestone.name}</span>
+                </div>
+                <div className='flex items-center gap-2'>
+                    <hubStats.nextMilestone.icon className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-semibold text-primary">{hubStats.nextMilestone.name}</span>
+                </div>
+            </div>
             <div className="flex items-center gap-4">
                 <Progress value={progressToNextMilestone} className="flex-1 h-3" />
                 <span className='font-bold text-lg'>{hubStats.totalSwaps} / {hubStats.nextMilestone.threshold}</span>
             </div>
-             <p className="text-xs text-muted-foreground mt-2">
-                Hai già ottenuto il badge: <Badge variant="secondary" className='ml-1'>{hubStats.currentMilestone.name}</Badge>
-            </p>
         </CardContent>
       </Card>
 
