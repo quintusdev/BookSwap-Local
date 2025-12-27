@@ -19,21 +19,19 @@ import { useLanguage } from '@/context/language-context';
 import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { BookCard } from '@/components/book-card';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 type UserProfile = {
     name?: string;
     favoriteGenres?: string[];
 }
 
-const currentUser = mockUsers[0];
-const userSwaps = mockSwaps.filter(
-  (swap) => swap.ownerId === currentUser.id || swap.requesterId === currentUser.id
-);
-
 export default function HomePage() {
   const { t } = useLanguage();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -41,7 +39,22 @@ export default function HomePage() {
   }, [firestore, user]);
 
   const { data: userProfile } = useDoc<UserProfile>(userDocRef);
+  
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.replace('/login');
+    }
+  }, [user, isUserLoading, router]);
 
+  // The loading skeleton is now in the (app) layout, so we can just return null
+  if (isUserLoading || !user) {
+    return null;
+  }
+
+  const currentUser = mockUsers[0];
+  const userSwaps = mockSwaps.filter(
+    (swap) => swap.ownerId === currentUser.id || swap.requesterId === currentUser.id
+  );
   const suggestedBooks = mockBooks.filter(book => userProfile?.favoriteGenres?.includes(book.genre) && book.status === 'available');
 
 
