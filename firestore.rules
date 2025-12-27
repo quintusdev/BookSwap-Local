@@ -113,7 +113,8 @@ service cloud.firestore {
 
     match /chats/{chatId} {
       allow get, update, create: if isSignedIn() && request.auth.uid in resource.data.users;
-      allow list: if isRole(request.auth.uid, 'admin');
+      // A user can list chats if their UID is in the 'users' array, which is what the query checks for.
+      allow list: if isSignedIn() && request.query.where.users.hasAny([request.auth.uid]);
 
       match /messages/{messageId} {
         allow list, get: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
