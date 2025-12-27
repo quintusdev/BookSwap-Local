@@ -12,7 +12,7 @@ export default function IdentityPage() {
           <div className="inline-block">
             <Logo />
           </div>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl leading-tight">
+          <h1 className="mt-8 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl leading-tight">
             Dove le storie trovano una nuova casa.
             <br />
             E tu, una nuova community.
