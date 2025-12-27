@@ -13,7 +13,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Form,
   FormControl,
@@ -44,7 +43,6 @@ const formSchema = z.object({
   lastName: z.string().min(1, { message: 'Last name is required' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-  role: z.enum(['reader', 'library']),
   avatarFile: z.instanceof(File).optional(),
   favoriteGenres: z.array(z.string()).max(5, "You can select up to 5 genres.").optional(),
 });
@@ -66,7 +64,6 @@ export default function SignupPage() {
       lastName: '',
       email: '',
       password: '',
-      role: 'reader',
       favoriteGenres: [],
     },
   });
@@ -86,7 +83,7 @@ export default function SignupPage() {
             id: newUser.uid,
             email: newUser.email,
             name: `${values.firstName} ${values.lastName}`,
-            role: values.role,
+            role: 'reader',
             city: 'Not set',
             subscription: 'Free',
             avatarUrl: avatarUrl,
@@ -232,37 +229,6 @@ export default function SignupPage() {
                 )}
             />
 
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('signup_i_am_a_label')}</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex gap-4 pt-1"
-                        disabled={isSubmitting}
-                      >
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="reader" id="r1" />
-                          </FormControl>
-                          <FormLabel htmlFor="r1" className='font-normal'>{t('signup_reader_option')}</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="library" id="r2" />
-                          </FormControl>
-                          <FormLabel htmlFor="r2" className='font-normal'>{t('signup_library_option')}</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isSubmitting}>
                 {isSubmitting ? t('signup_creating_account_button') : t('signup_create_account_button')}
               </Button>

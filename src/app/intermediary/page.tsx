@@ -40,7 +40,7 @@ export default function IntermediaryPage() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                     <span className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
-                        PER LIBRERIE, BAR E BIBLIOTECHE
+                        PER BAR, LIBRERIE E SPAZI CULTURALI
                     </span>
                   <h1 className="font-headline text-3xl font-bold tracking-tight sm:text-5xl xl:text-6xl/none">
                     Porta Nuovi Clienti nel Tuo Negozio. Ogni Giorno.
