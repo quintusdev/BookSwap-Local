@@ -3,155 +3,121 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ------------------------------------------------------------------------
-    // Helper Functions
-    // ------------------------------------------------------------------------
+    // --- Helper Functions ---
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function getUserRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
     }
 
     function isRole(userId, role) {
-      return isSignedIn() && getUserRole(userId) == role;
+      return getUserData(userId).role == role;
     }
-
+    
     function isOneOfRoles(userId, roles) {
-      return isSignedIn() && getUserRole(userId) in roles;
+      return getUserData(userId).role in roles;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-    
-    function isOwnerOrAdmin(userId) {
-        return isOwner(userId) || isRole(request.auth.uid, 'admin');
-    }
-
-    function isIntermediaryOrAdmin() {
-        return isOneOfRoles(request.auth.uid, ['intermediary', 'admin']);
-    }
-    
     function isIntermediaryOfLocation(locationId) {
-        let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-        return isRole(request.auth.uid, 'intermediary') && userData.locationId == locationId;
+      let userData = getUserData(request.auth.uid);
+      return userData.role == 'intermediary' && userData.locationId == locationId;
     }
     
-    function isIntermediaryOfLocationOrAdmin(locationId) {
-        return isIntermediaryOfLocation(locationId) || isRole(request.auth.uid, 'admin');
+    function serverTimestampOrUnchanged(fieldName) {
+      return request.resource.data[fieldName] == request.time || request.resource.data[fieldName] == resource.data[fieldName];
     }
+    
+    // --- Collection Rules ---
 
-    // ------------------------------------------------------------------------
-    // Collection Rules
-    // ------------------------------------------------------------------------
-    
+    // Users: Can only write to their own doc, and only specific fields.
     match /users/{userId} {
-      // Admins can read/write any user. Users can only read/write their own document.
-      allow read, write: if isOwnerOrAdmin(userId);
-      // Only Admins can list all users.
-      allow list: if isRole(request.auth.uid, 'admin');
-
-      // Specific rule for profile updates: users can only update their own profile fields.
-      allow update: if isOwner(userId)
-                    && request.resource.data.keys().hasOnly(['profile']);
-    }
-
-    match /cities/{cityId} {
-      // City data is public and read-only for clients.
-      allow get, list: if isSignedIn();
-      allow write: if isRole(request.auth.uid, 'admin');
-    }
-    
-    match /locations/{locationId} {
-      // Any signed-in user can view active location details.
-      allow get: if isSignedIn() && resource.data.status == 'active';
-      // Intermediaries can list active locations for the map. Admins can list all.
-      allow list: if isSignedIn();
-
-      // The assigned intermediary or an admin can read the full doc for their dashboard.
-      allow read: if isIntermediaryOfLocationOrAdmin(locationId);
-
-      // Intermediary can only update a limited set of non-critical fields.
-      allow update: if isIntermediaryOfLocation(locationId)
-                      && request.resource.data.keys().hasOnly(['name', 'address', 'description']); // Example editable fields
-
-      // Admins have full control.
-      allow create, delete: if isRole(request.auth.uid, 'admin');
-      // Prevent client-side modification of critical geo-fields.
-      allow update: if isRole(request.auth.uid, 'admin')
-                    && !('geohash' in request.resource.data.diff(resource.data).affectedKeys());
-    }
-
-    match /books/{bookId} {
-        allow read: if isSignedIn();
-        allow create: if isOwner(request.resource.data.ownerId) || isRole(request.auth.uid, 'admin');
-        allow update, delete: if isOwner(resource.data.ownerId) || isRole(request.auth.uid, 'admin');
-    }
-
-    match /users/{userId}/wishlist/{wishlistItemId} {
-      allow read, write: if isOwnerOrAdmin(userId);
-    }
-
-    match /users/{userId}/swapPasses/{swapPassId} {
-      allow read, write: if isOwnerOrAdmin(userId);
-    }
-
-    match /swaps/{swapId} {
-      allow get: if (isSignedIn() && (request.auth.uid in resource.data.participantIds || isIntermediaryOfLocation(resource.data.locationId))) || isRole(request.auth.uid, 'admin');
-      allow list: if isIntermediaryOrAdmin();
-      allow create: if (isSignedIn() && request.auth.uid == request.resource.data.wishlistOwnerId);
-      // Users can accept/cancel, but CANNOT change status to 'confirmed'. This must be done server-side.
-      allow update: if (isSignedIn() && request.auth.uid in resource.data.participantIds)
-                    && !("status" in request.resource.data.diff(resource.data).affectedKeys())
-                    || (request.resource.data.status != "confirmed");
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && request.resource.data.keys().hasOnly(['profile', 'updatedAt']);
       allow delete: if isRole(request.auth.uid, 'admin');
     }
-    
-    match /events/{eventId} {
-      allow get, list: if isSignedIn();
-      allow create: if isIntermediaryOfLocation(request.resource.data.locationId);
-      allow update, delete: if isIntermediaryOfLocation(resource.data.locationId);
-    }
-    
-    match /reward_claims/{claimId} {
-        allow create: if isIntermediaryOfLocation(request.resource.data.locationId);
-        allow read, list: if isIntermediaryOfLocation(resource.data.locationId) || isRole(request.auth.uid, 'admin');
-        allow update, delete: if isRole(request.auth.uid, 'admin');
-    }
 
-    match /reviews/{reviewId} {
-        allow get, list: if true;
-        allow create: if isSignedIn() && request.auth.uid == request.resource.data.reviewerId;
-        allow update: if false; // Immutable
-        allow delete: if isRole(request.auth.uid, 'admin');
-    }
-
-    match /chats/{chatId} {
-      allow read, update, create: if isSignedIn() && request.auth.uid in resource.data.users;
-      allow list: if isSignedIn() && request.auth.uid in resource.data.users;
-
-      match /messages/{messageId} {
-        allow list, get: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
-        allow create: if isSignedIn() && (request.auth.uid == request.resource.data.senderId || request.resource.data.senderId == 'system') && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
-        allow update: if false; // Immutable
-        allow delete: if isRole(request.auth.uid, 'admin');
-      }
+    // Cities: Public read-only dataset.
+    match /cities/{cityId} {
+      allow get, list: if true;
+      allow write: if false; // Managed by admin/backend process
     }
     
-    match /mail/{docId} {
-        allow read, write, create, list, delete: if false;
+    // Locations: Publicly readable, but writing is restricted.
+    match /locations/{locationId} {
+      allow get: if resource.data.status == 'active';
+      allow list: if true;
+
+      // Intermediary can edit some details, but not critical fields.
+      allow update: if isIntermediaryOfLocation(locationId)
+                    && request.resource.data.keys().hasOnly(['name', 'address', 'updatedAt'])
+                    && serverTimestampOrUnchanged('updatedAt');
+      
+      // Admin has full control.
+      allow create, update: if isRole(request.auth.uid, 'admin');
+      allow delete: if isRole(request.auth.uid, 'admin');
+
+      // Crucially, geohash cannot be written by clients.
+      deny write: if 'geohash' in request.resource.data.diff(resource.data).affectedKeys();
     }
 
-    match /leads_readers/{docId} {
-        allow create: if true;
-        allow read, update, delete, list: if false;
+    // Books: Owner can create/update/delete. Others can read.
+    match /books/{bookId} {
+        allow read: if true;
+        allow create: if isOwner(request.resource.data.ownerId) && serverTimestampOrUnchanged('createdAt');
+        allow update: if isOwner(resource.data.ownerId) 
+                      && serverTimestampOrUnchanged('updatedAt')
+                      && !('ownerId' in request.resource.data.diff(resource.data).affectedKeys());
+        allow delete: if isOwner(resource.data.ownerId);
     }
 
-    match /leads_partners/{docId} {
-        allow create: if true;
-        allow read, update, delete, list: if false;
+    // Swaps: The core of the server-authoritative logic.
+    match /swaps/{swapId} {
+      allow get: if request.auth.uid in resource.data.participantIds || isIntermediaryOfLocation(resource.data.locationId);
+      allow list: if isSignedIn(); // Queries must be secured with 'where' clauses.
+
+      // CREATE: Only a requester can initiate a swap.
+      allow create: if isSignedIn()
+                    && request.auth.uid == request.resource.data.requesterId
+                    && request.resource.data.status == 'requested'
+                    && request.resource.data.requesterId in request.resource.data.participantIds
+                    && request.resource.data.ownerId in request.resource.data.participantIds
+                    && request.resource.data.size() == 9; // Enforce minimal fields on create
+      
+      // UPDATE: State machine logic.
+      allow update: if isSignedIn() && request.auth.uid in resource.data.participantIds
+                    && serverTimestampOrUnchanged('updatedAt')
+                    // Transition: owner accepts a request
+                    && resource.data.status == 'requested' 
+                    && request.resource.data.status == 'accepted' 
+                    && request.auth.uid == resource.data.ownerId
+                    // Transition: requester cancels a pending request
+                    && resource.data.status == 'requested' 
+                    && request.resource.data.status == 'cancelled'
+                    && request.auth.uid == resource.data.requesterId
+                    // Transition: any participant cancels an accepted swap
+                    && resource.data.status == 'accepted' 
+                    && request.resource.data.status == 'cancelled';
+
+      // Only an intermediary can confirm the swap. This should ideally be a Cloud Function.
+      // This rule is a placeholder for that server-side logic.
+      allow update: if isIntermediaryOfLocation(resource.data.locationId)
+                    && resource.data.status == 'accepted'
+                    && request.resource.data.status == 'confirmed'
+                    && request.resource.data.confirmedBy == request.auth.uid;
+    }
+    
+    // Default deny all other collections.
+    match /{path=**} {
+      allow read, write: if false;
     }
   }
 }
+
+    

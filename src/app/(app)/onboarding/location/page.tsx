@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { City, CityAutocomplete } from '@/components/city-autocomplete';
-import { useUser } from '@/firebase';
-import { updateUserCities } from '@/app/actions/user';
+import { useUser, useFirestore, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { doc, serverTimestamp } from 'firebase/firestore';
 
 export default function LocationOnboardingPage() {
   const { user } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -20,15 +21,28 @@ export default function LocationOnboardingPage() {
   const [secondaryCity, setSecondaryCity] = useState<City | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
   const handleSave = async () => {
-    if (!user || !primaryCity) {
+    if (!userDocRef || !primaryCity) {
       toast({ variant: 'destructive', title: 'Città Principale Obbligatoria', description: 'Per favore, seleziona la tua città principale.' });
       return;
     }
     
     setIsSubmitting(true);
     try {
-      await updateUserCities({ primaryCity, secondaryCity });
+      const profileData = {
+        'profile.primaryCity': primaryCity,
+        'profile.secondaryCity': secondaryCity || null,
+        'profile.activeCity': 'primary',
+        'profile.updatedAt': serverTimestamp(),
+      };
+
+      setDocumentNonBlocking(userDocRef, profileData, { merge: true });
+      
       toast({ title: 'Profilo aggiornato!', description: 'Ti abbiamo portato alla tua nuova home page.' });
       router.push('/home');
     } catch (error) {
@@ -75,3 +89,5 @@ export default function LocationOnboardingPage() {
     </div>
   );
 }
+
+    

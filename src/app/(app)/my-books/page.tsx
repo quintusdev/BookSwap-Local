@@ -31,8 +31,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/context/language-context';
-import { useUser, useFirestore, useCollection, addDocumentNonBlocking, deleteDocumentNonBlocking, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, addDocumentNonBlocking, deleteDocumentNonBlocking, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, doc, serverTimestamp, query, where } from 'firebase/firestore';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -47,9 +47,7 @@ const bookSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   author: z.string().min(1, 'Author is required'),
   isbn: z.string().optional(),
-  publicationYear: z.coerce.number().optional(),
-  publisher: z.string().optional(),
-  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']).optional(),
+  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor']),
   notes: z.string().optional(),
 });
 
@@ -58,10 +56,16 @@ type Book = {
   title: string;
   author: string;
   isbn?: string;
-  status: 'available' | 'in-swap' | 'swapped';
+  status: 'available' | 'reserved' | 'swapped';
   imageUrls: string[];
   ownerId: string;
   condition?: 'new' | 'like_new' | 'good' | 'fair' | 'poor';
+}
+
+type UserProfile = {
+  profile?: {
+    primaryCity?: { lat: number; lng: number; name: string };
+  }
 }
 
 const bookConditions = [
@@ -77,12 +81,8 @@ export default function MyBooksPage() {
     const { user } = useUser();
     const firestore = useFirestore();
 
-    // Querying the global 'books' collection for books owned by the current user.
     const booksCollectionRef = useMemoFirebase(() => {
         if (!user) return null;
-        // This query is illustrative. For performance, you might not want to query the entire
-        // global collection on the client. A backend function or more specific query is better.
-        // For this example, we proceed.
         return query(collection(firestore, 'books'), where('ownerId', '==', user.uid));
     }, [firestore, user]);
 
@@ -156,34 +156,34 @@ function AddBookDialog() {
     const firestore = useFirestore();
     const [open, setOpen] = useState(false);
 
+    const userDocRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+
+    const { data: userProfile } = useDoc<UserProfile>(userDocRef);
+
     const form = useForm<z.infer<typeof bookSchema>>({
         resolver: zodResolver(bookSchema),
         defaultValues: {
             title: '',
             author: '',
             isbn: '',
-            publicationYear: undefined,
-            publisher: '',
             condition: 'good',
             notes: '',
         }
     });
 
     async function onSubmit(values: z.infer<typeof bookSchema>) {
-        if (!user) return;
+        if (!user || !userProfile?.profile?.primaryCity) {
+            alert("User profile with primary city is required to add a book.");
+            return;
+        }
 
         const booksCollection = collection(firestore, 'books');
+        const userCity = userProfile.profile.primaryCity;
         
-        // In a real app, you'd get the user's location from their profile or GPS.
-        // For now, we'll use a mock location for New York.
-        const userLat = 40.7128;
-        const userLng = -74.0060;
-        const userCity = 'New York';
-        
-        // Simulate multiple image uploads
-        const imageUrls = Array.from({ length: 3 }, (_, i) => 
-            `https://picsum.photos/seed/book${Math.random() * 1000}/${200 + i*10}/${300 + i*10}`
-        );
+        const imageUrls = [`https://picsum.photos/seed/book${Math.random() * 1000}/400/600`];
         
         const newBookRef = doc(booksCollection);
 
@@ -193,10 +193,10 @@ function AddBookDialog() {
             status: 'available',
             ...values,
             location: {
-                lat: userLat,
-                lng: userLng,
-                city: userCity,
-                geohash: generateGeohash(userLat, userLng),
+                lat: userCity.lat,
+                lng: userCity.lng,
+                city: userCity.name,
+                geohash: generateGeohash(userCity.lat, userCity.lng),
             },
             imageUrls: imageUrls,
             createdAt: serverTimestamp(),
@@ -264,24 +264,6 @@ function AddBookDialog() {
                         </FormItem>
                     )}
                     />
-                <FormField control={form.control} name="publicationYear" render={({field}) => (
-                    <FormItem>
-                        <FormLabel>{t('my_books_dialog_publication_year_label')} (Optional)</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="1925" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={form.control} name="publisher" render={({field}) => (
-                    <FormItem>
-                        <FormLabel>{t('my_books_dialog_publisher_label')} (Optional)</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Charles Scribner's Sons" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
                  <FormField control={form.control} name="isbn" render={({field}) => (
                     <FormItem>
                         <FormLabel>{t('my_books_dialog_isbn_label')} (Optional)</FormLabel>
@@ -340,3 +322,5 @@ function BookActions({ bookId }: { bookId: string }) {
         </DropdownMenu>
     )
 }
+
+    

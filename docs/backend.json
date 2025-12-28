@@ -7,11 +7,11 @@
       "type": "object",
       "description": "Represents a user in the BookSwap application.",
       "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the user." },
+        "id": { "type": "string", "description": "Unique identifier for the user (matches Firebase Auth UID)." },
         "email": { "type": "string", "description": "User's email address.", "format": "email" },
         "name": { "type": "string", "description": "User's full name or business name." },
-        "role": { "type": "string", "description": "Role of the user.", "enum": ["reader", "intermediary", "admin"] },
-        "locationId": { "type": "string", "description": "The ID of the location this intermediary user manages. Only present for role 'intermediary'." },
+        "role": { "type": "string", "description": "Role of the user, determines permissions.", "enum": ["reader", "intermediary", "admin"] },
+        "locationId": { "type": ["string", "null"], "description": "For 'intermediary' role, the ID of the location they manage." },
         "profile": {
             "type": "object",
             "description": "User's public profile and location settings.",
@@ -19,44 +19,37 @@
                 "primaryCity": {
                     "type": "object",
                     "properties": {
-                        "name": { "type": "string" },
-                        "provinceCode": { "type": "string" },
-                        "placeId": { "type": "string" },
-                        "lat": { "type": "number" },
-                        "lng": { "type": "number" }
-                    }
+                        "name": { "type": "string" }, "provinceCode": { "type": "string" }, "placeId": { "type": "string" }, "lat": { "type": "number" }, "lng": { "type": "number" }
+                    },
+                    "required": ["name", "provinceCode", "placeId", "lat", "lng"]
                 },
                 "secondaryCity": {
                     "type": ["object", "null"],
                     "properties": {
-                        "name": { "type": "string" },
-                        "provinceCode": { "type": "string" },
-                        "placeId": { "type": "string" },
-                        "lat": { "type": "number" },
-                        "lng": { "type": "number" }
+                        "name": { "type": "string" }, "provinceCode": { "type": "string" }, "placeId": { "type": "string" }, "lat": { "type": "number" }, "lng": { "type": "number" }
                     }
                 },
                 "activeCity": { "type": "string", "enum": ["primary", "secondary"] },
-                "avatarUrl": { "type": "string", "description": "URL of the user's profile picture." },
+                "avatarUrl": { "type": "string", "format": "uri" },
                 "favoriteGenres": { "type": "array", "items": { "type": "string" } },
-                "rating": { "type": "number" },
-                "reviewCount": { "type": "number" },
+                "rating": { "type": "number", "minimum": 0, "maximum": 5 },
+                "reviewCount": { "type": "number", "minimum": 0 },
                 "createdAt": { "type": "string", "format": "date-time" },
                 "updatedAt": { "type": "string", "format": "date-time" }
-            }
+            },
+            "required": ["primaryCity", "activeCity", "createdAt", "updatedAt"]
         },
         "subscription": {
           "type": "object",
+          "description": "Subscription details, primarily for 'intermediary' role.",
           "properties": {
              "status": { "type": "string", "enum": ["active", "trialing", "cancelled", "past_due"] }
           }
         },
         "acceptedTermsAt": { "type": "string", "format": "date-time" },
-        "acceptedPrivacyAt": { "type": "string", "format": "date-time" },
-        "localCounters": { "type": "object", "additionalProperties": { "type": "number" } },
-        "hubBadges": { "type": "array", "items": { "type": "string" } }
+        "acceptedPrivacyAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "email", "name", "role"]
+      "required": ["id", "email", "name", "role", "profile"]
     },
     "Location": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -65,67 +58,94 @@
         "description": "Represents an intermediary location (BookSwap Hub).",
         "properties": {
             "id": { "type": "string" },
-            "ownerId": { "type": "string" },
+            "ownerId": { "type": "string", "description": "UID of the 'intermediary' user who owns this location." },
             "name": { "type": "string" },
             "address": { "type": "string" },
             "city": { "type": "string" },
             "provinceCode": { "type": "string" },
             "status": { "type": "string", "enum": ["active", "pending", "suspended"]},
             "geo": {
-                "type": "object",
-                "properties": {
-                    "lat": { "type": "number" },
-                    "lng": { "type": "number" }
-                }
+                "type": "object", "properties": { "lat": { "type": "number" }, "lng": { "type": "number" } }, "required": ["lat", "lng"]
             },
-            "geohash": { "type": "string" },
-            "subscription": { "type": "object", "properties": { "status": { "type": "string" }, "renewAt": {"type": "string", "format": "date-time"} }},
-            "milestoneLevel": { "type": "number" },
-            "qrToken": { "type": "string" },
-            "qrCodeUrl": { "type": "string" },
-            "metrics": { "type": "object", "properties": { "swapTotal": { "type": "number"},"swap30d": { "type": "number"}, "swapToday": { "type": "number"}, "uniqueUsers30d": { "type": "number"}, "returningUsers30d": { "type": "number"}, "confirmRate": { "type": "number"} }},
+            "geohash": { "type": "string", "description": "Server-generated geohash for location queries." },
+            "milestoneLevel": { "type": "number", "minimum": 0, "default": 0 },
+            "qrToken": { "type": "string", "description": "Unique secret token to generate QR codes." },
+            "metrics": { "type": "object", "properties": { "swapTotal": { "type": "number"}, "swap30d": { "type": "number"} }},
+            "createdAt": { "type": "string", "format": "date-time" },
             "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "ownerId", "name", "city", "status", "geo", "geohash"]
-    },
-     "cities": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "title": "City",
-        "type": "object",
-        "description": "Dataset of cities for autocomplete and selection.",
-        "properties": {
-            "id": { "type": "string" },
-            "name": { "type": "string" },
-            "provinceCode": { "type": "string" },
-            "region": { "type": "string" },
-            "placeId": { "type": "string" },
-            "lat": { "type": "number" },
-            "lng": { "type": "number" },
-            "normalizedName": { "type": "string" },
-            "keywords": { "type": "array", "items": { "type": "string" } }
-        }
+        "required": ["id", "ownerId", "name", "city", "status", "geo", "createdAt", "updatedAt"]
     },
     "Book": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Book",
       "type": "object",
+      "description": "A book listed by a user for swapping.",
       "properties": {
-        "id": { "type": "string" }, "ownerId": { "type": "string" }, "title": { "type": "string" }, "author": { "type": "string" }, "isbn": { "type": "string" }, "status": { "type": "string", "enum": ["available", "in-swap", "swapped"] },
-        "locationId": { "type": "string", "description": "ID of the location where the book is available. For geo-suggestions." },
-        "available": { "type": "boolean" },
-        "imageUrls": { "type": "array", "items": { "type": "string" } }, "publicationYear": { "type": "number" }, "publisher": { "type": "string" }, "condition": { "type": "string", "enum": ["new", "like_new", "good", "fair", "poor"] }, "notes": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" }
+        "id": { "type": "string" }, 
+        "ownerId": { "type": "string" }, 
+        "title": { "type": "string" }, 
+        "author": { "type": "string" }, 
+        "isbn": { "type": ["string", "null"] }, 
+        "status": { "type": "string", "enum": ["available", "reserved", "swapped"], "default": "available" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "city": { "type": "string" },
+            "geohash": { "type": "string" }
+          },
+          "required": ["lat", "lng", "city", "geohash"]
+        },
+        "imageUrls": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "condition": { "type": "string", "enum": ["new", "like_new", "good", "fair", "poor"] },
+        "notes": { "type": "string" }, 
+        "createdAt": { "type": "string", "format": "date-time" }, 
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": [ "id", "ownerId", "title", "author", "status" ]
+      "required": [ "id", "ownerId", "title", "author", "status", "location", "createdAt", "updatedAt" ]
     },
-    "WishlistItem": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "WishlistItem", "type": "object", "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "title": { "type": "string" }, "author": { "type": "string" } }, "required": [ "id", "userId", "title", "author" ] },
-    "Swap": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Swap", "type": "object", "properties": { "id": { "type": "string" }, "bookId": { "type": "string" }, "wishlistItemId": { "type": "string" }, "bookOwnerId": { "type": "string" }, "wishlistOwnerId": { "type": "string" }, "participantIds": { "type": "array", "items": { "type": "string" } }, "code": { "type": "string" }, "status": { "type": "string" }, "locationId": { "type": "string" }, "locationName": { "type": "string" }, "createdAt": {"type": "string", "format": "date-time"}, "expiresAt": {"type": "string", "format": "date-time"}, "confirmedAt": {"type": "string", "format": "date-time"}, "confirmedBy": {"type": "string"}, "attempts": {"type": "number"} }, "required": [ "id", "bookId", "wishlistItemId", "bookOwnerId", "wishlistOwnerId", "participantIds", "code", "status", "locationId" ] },
-    "Event": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Event", "type": "object", "properties": { "id": {"type": "string"}, "locationId": {"type": "string"}, "title": {"type": "string"}, "description": {"type": "string"}, "startAt": {"type": "string", "format": "date-time"}, "status": {"type": "string", "enum": ["draft", "published", "canceled"]}, "createdAt": {"type": "string", "format": "date-time"} }, "required": ["id", "locationId", "title", "startAt", "status"] },
-     "RewardClaim": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "RewardClaim", "type": "object", "properties": { "id": {"type": "string"}, "locationId": {"type": "string"}, "rewardId": {"type": "string"}, "createdAt": {"type": "string", "format": "date-time"}, "status": {"type": "string", "enum": ["pending", "approved", "rejected"]} }, "required": ["id", "locationId", "rewardId", "createdAt", "status"] },
-    "Review": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Review", "type": "object", "properties": { "id": { "type": "string" }, "swapId": { "type": "string" }, "reviewerId": { "type": "string" }, "revieweeId": { "type": "string" }, "rating": { "type": "number" }, "comment": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" } }, "required": ["id", "swapId", "reviewerId", "revieweeId", "rating", "createdAt"] },
-    "SwapPass": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "SwapPass", "type": "object", "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "type": { "type": "string" }, "startDate": { "type": "string", "format": "date-time" }, "endDate": { "type": "string", "format": "date-time" } }, "required": [ "id", "userId", "type", "startDate", "endDate" ] },
-    "LibraryTransaction": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "LibraryTransaction", "type": "object", "properties": { "id": { "type": "string" }, "libraryId": { "type": "string" }, "swapId": { "type": "string" }, "date": { "type": "string", "format": "date-time" }, "amount": { "type": "number" } }, "required": [ "id", "libraryId", "swapId", "date", "amount" ] },
-    "Chat": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Chat", "type": "object", "properties": { "id": { "type": "string" }, "users": { "type": "array", "items": { "type": "string" } }, "userNames": { "type": "object", "additionalProperties": { "type": "string" } }, "userAvatars": { "type": "object", "additionalProperties": { "type": "string" } }, "lastMessage": { "type": "object", "properties": { "text": { "type": "string" }, "timestamp": { "type": "string", "format": "date-time" }, "senderId": { "type": "string" } } } }, "required": ["id", "users", "userNames", "userAvatars"] },
-    "ChatMessage": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "ChatMessage", "type": "object", "properties": { "id": { "type": "string" }, "senderId": { "type": "string" }, "text": { "type": "string" }, "timestamp": { "type": "string", "format": "date-time" } }, "required": ["id", "senderId", "text", "timestamp"] }
+    "Swap": { 
+      "$schema": "http://json-schema.org/draft-07/schema#", 
+      "title": "Swap", 
+      "type": "object",
+      "description": "Represents a book swap transaction and its state.",
+      "properties": { 
+        "id": { "type": "string" },
+        "requesterId": { "type": "string" },
+        "requesterBookId": { "type": "string" },
+        "ownerId": { "type": "string" }, 
+        "ownerBookId": { "type": "string" },
+        "participantIds": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2 },
+        "status": { "type": "string", "enum": ["requested", "accepted", "confirmed", "completed", "cancelled", "rejected", "expired"] }, 
+        "locationId": { "type": "string", "description": "The ID of the hub where the swap will be confirmed." },
+        "confirmationCode": { "type": "string", "description": "A short, server-generated code for in-person confirmation."},
+        "denormalized": {
+            "type": "object",
+            "properties": {
+                "requesterName": { "type": "string" },
+                "ownerName": { "type": "string" },
+                "requesterBookTitle": { "type": "string" },
+                "ownerBookTitle": { "type": "string" },
+                "locationName": { "type": "string" }
+            }
+        },
+        "createdAt": {"type": "string", "format": "date-time"}, 
+        "updatedAt": {"type": "string", "format": "date-time"}, 
+        "expiresAt": {"type": "string", "format": "date-time", "description": "Server-set expiration timestamp for the request."}, 
+        "confirmedAt": {"type": ["string", "null"], "format": "date-time"},
+        "confirmedBy": {"type": ["string", "null"], "description": "UID of the intermediary who confirmed the swap."}
+      }, 
+      "required": [ "id", "requesterId", "requesterBookId", "ownerId", "ownerBookId", "participantIds", "status", "locationId", "createdAt", "updatedAt" ] 
+    },
+     "cities": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "City", "type": "object", "description": "Dataset of cities for autocomplete and selection.",
+        "properties": {
+            "name": { "type": "string" }, "provinceCode": { "type": "string" }, "region": { "type": "string" }, "placeId": { "type": "string" }, "lat": { "type": "number" }, "lng": { "type": "number" }
+        }
+    }
   },
   "firestore": {
     "structure": [
@@ -133,15 +153,9 @@
       { "path": "/cities/{cityId}", "definition": { "entityName": "cities", "schema": { "$ref": "#/entities/cities" } } },
       { "path": "/locations/{locationId}", "definition": { "entityName": "Location", "schema": { "$ref": "#/entities/Location" } } },
       { "path": "/books/{bookId}", "definition": { "entityName": "Book", "schema": { "$ref": "#/entities/Book" } } },
-      { "path": "/users/{userId}/wishlist/{wishlistItemId}", "definition": { "entityName": "WishlistItem", "schema": { "$ref": "#/entities/WishlistItem" } } },
-      { "path": "/swaps/{swapId}", "definition": { "entityName": "Swap", "schema": { "$ref": "#/entities/Swap" } } },
-      { "path": "/events/{eventId}", "definition": { "entityName": "Event", "schema": { "$ref": "#/entities/Event" } } },
-      { "path": "/reward_claims/{claimId}", "definition": { "entityName": "RewardClaim", "schema": { "$ref": "#/entities/RewardClaim" } } },
-      { "path": "/reviews/{reviewId}", "definition": { "entityName": "Review", "schema": { "$ref": "#/entities/Review" } } },
-      { "path": "/users/{userId}/swapPasses/{swapPassId}", "definition": { "entityName": "SwapPass", "schema": { "$ref": "#/entities/SwapPass" } } },
-      { "path": "/libraryTransactions/{libraryTransactionId}", "definition": { "entityName": "LibraryTransaction", "schema": { "$ref": "#/entities/LibraryTransaction" } } },
-      { "path": "/chats/{chatId}", "definition": { "entityName": "Chat", "schema": { "$ref": "#/entities/Chat" } } },
-      { "path": "/chats/{chatId}/messages/{messageId}", "definition": { "entityName": "ChatMessage", "schema": { "$ref": "#/entities/ChatMessage" } } }
+      { "path": "/swaps/{swapId}", "definition": { "entityName": "Swap", "schema": { "$ref": "#/entities/Swap" } } }
     ]
   }
 }
+
+    
