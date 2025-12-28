@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -13,6 +14,9 @@ const HeroSection = () => (
     <div className="container mx-auto px-4">
       <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
         <div className="text-center md:text-left">
+          <div className="mb-6 flex justify-center md:justify-start">
+            <Logo />
+          </div>
           <h1 className="font-headline text-4xl font-bold tracking-tight text-stone-900 sm:text-5xl md:text-6xl">
             Dai una seconda vita ai tuoi libri.
             <br />
