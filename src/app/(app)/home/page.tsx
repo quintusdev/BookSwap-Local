@@ -21,6 +21,7 @@ import { doc } from 'firebase/firestore';
 import { BookCard } from '@/components/book-card';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Logo } from '@/components/logo';
 
 type UserProfile = {
     name?: string;
@@ -89,10 +90,8 @@ export default function HomePage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className='space-y-1'>
-            <h1 className="font-headline text-3xl font-bold tracking-tight">
-                {t('home_welcome')}, {userProfile?.name || user?.email}!
-            </h1>
-            <p className='text-muted-foreground'>{t('home_subtitle')}</p>
+            <Logo />
+            <p className='text-muted-foreground pt-2'>{t('home_welcome')}, {userProfile?.name || user?.email}!</p>
         </div>
         <Button asChild>
           <Link href="/browse">
