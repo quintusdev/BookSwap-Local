@@ -7,93 +7,56 @@
       "type": "object",
       "description": "Represents a user in the BookSwap application.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user."
+        "id": { "type": "string", "description": "Unique identifier for the user." },
+        "email": { "type": "string", "description": "User's email address.", "format": "email" },
+        "name": { "type": "string", "description": "User's full name or business name." },
+        "role": { "type": "string", "description": "Role of the user.", "enum": ["reader", "intermediary", "admin"] },
+        "locationId": { "type": "string", "description": "The ID of the location this intermediary user manages. Only present for role 'intermediary'." },
+        "profile": {
+            "type": "object",
+            "description": "User's public profile and location settings.",
+            "properties": {
+                "primaryCity": {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string" },
+                        "provinceCode": { "type": "string" },
+                        "placeId": { "type": "string" },
+                        "lat": { "type": "number" },
+                        "lng": { "type": "number" }
+                    }
+                },
+                "secondaryCity": {
+                    "type": ["object", "null"],
+                    "properties": {
+                        "name": { "type": "string" },
+                        "provinceCode": { "type": "string" },
+                        "placeId": { "type": "string" },
+                        "lat": { "type": "number" },
+                        "lng": { "type": "number" }
+                    }
+                },
+                "activeCity": { "type": "string", "enum": ["primary", "secondary"] },
+                "avatarUrl": { "type": "string", "description": "URL of the user's profile picture." },
+                "favoriteGenres": { "type": "array", "items": { "type": "string" } },
+                "rating": { "type": "number" },
+                "reviewCount": { "type": "number" },
+                "createdAt": { "type": "string", "format": "date-time" },
+                "updatedAt": { "type": "string", "format": "date-time" }
+            }
         },
-        "email": {
-          "type": "string",
-          "description": "User's email address.",
-          "format": "email"
-        },
-        "name": {
-          "type": "string",
-          "description": "User's full name or business name."
-        },
-        "role": {
-          "type": "string",
-          "description": "Role of the user (reader, shop, superadmin, or professional).",
-          "enum": ["reader", "intermediary", "admin"]
-        },
-        "userType": {
-          "type": "string",
-          "description": "Defines the user category, e.g., 'professional' for business accounts.",
-          "enum": ["reader", "professional"]
-        },
-        "city": {
-          "type": "string",
-          "description": "City where the user is located."
-        },
-        "address": {
-            "type": "string",
-            "description": "Full address for professional users (intermediaries)."
-        },
-        "avatarUrl": {
-          "type": "string",
-          "description": "URL of the user's profile picture."
-        },
-        "favoriteGenres": {
-          "type": "array",
-          "description": "A list of the user's favorite book genres.",
-          "items": {
-            "type": "string"
+        "subscription": {
+          "type": "object",
+          "properties": {
+             "status": { "type": "string", "enum": ["active", "trialing", "cancelled", "past_due"] }
           }
         },
-        "rating": {
-          "type": "number",
-          "description": "The user's average rating from swaps."
-        },
-        "reviewCount": {
-          "type": "number",
-          "description": "Total number of reviews received."
-        },
-        "subscriptionStatus": {
-            "type": "string",
-            "description": "Subscription status for professional users.",
-            "enum": ["active", "trialing", "cancelled", "past_due"]
-        },
-        "acceptedTermsAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Timestamp for when the user accepted the terms of service."
-        },
-        "acceptedPrivacyAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Timestamp for when the user accepted the privacy policy."
-        },
-        "localCounters": {
-          "type": "object",
-          "description": "Map tracking user's swap count at specific locations. { locationId: count }.",
-          "additionalProperties": { "type": "number" }
-        },
-        "hubBadges": {
-            "type": "array",
-            "description": "Badges earned by the user at specific hubs.",
-            "items": { "type": "string" }
-        },
-        "locationId": {
-          "type": "string",
-          "description": "The ID of the location this intermediary user manages. Only present for role 'intermediary'."
-        }
+        "acceptedTermsAt": { "type": "string", "format": "date-time" },
+        "acceptedPrivacyAt": { "type": "string", "format": "date-time" },
+        "localCounters": { "type": "object", "additionalProperties": { "type": "number" } },
+        "hubBadges": { "type": "array", "items": { "type": "string" } }
       },
-      "required": [
-        "id",
-        "email",
-        "name",
-        "role",
-        "city"
-      ]
+      "required": ["id", "email", "name", "role"]
     },
     "Location": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -101,621 +64,84 @@
         "type": "object",
         "description": "Represents an intermediary location (BookSwap Hub).",
         "properties": {
-            "id": { "type": "string", "description": "Unique identifier, same as the owner's UID." },
-            "ownerId": { "type": "string", "description": "The UID of the professional user who owns this location." },
+            "id": { "type": "string" },
+            "ownerId": { "type": "string" },
             "name": { "type": "string" },
             "address": { "type": "string" },
             "city": { "type": "string" },
+            "provinceCode": { "type": "string" },
             "status": { "type": "string", "enum": ["active", "pending", "suspended"]},
-            "location": {
+            "geo": {
                 "type": "object",
                 "properties": {
                     "lat": { "type": "number" },
                     "lng": { "type": "number" }
                 }
             },
-            "subscription": {
-              "type": "object",
-              "properties": {
-                "status": { "type": "string", "enum": ["active", "past_due", "canceled", "paused"]},
-                "renewAt": {"type": "string", "format": "date-time"}
-              }
-            },
+            "geohash": { "type": "string" },
+            "subscription": { "type": "object", "properties": { "status": { "type": "string" }, "renewAt": {"type": "string", "format": "date-time"} }},
             "milestoneLevel": { "type": "number" },
             "qrToken": { "type": "string" },
-            "totalSwaps": { "type": "number", "description": "Total verified swaps at this location." },
-            "monthlySwaps": { "type": "number", "description": "Verified swaps in the current month." },
-            "currentMilestone": { "type": "string", "description": "The latest milestone achieved." },
-            "qrCodeUrl": { "type": "string", "description": "URL to the static QR code image." },
-            "metrics": {
-              "type": "object",
-              "properties": {
-                "swapTotal": { "type": "number"},
-                "swap30d": { "type": "number"},
-                "swapToday": { "type": "number"},
-                "uniqueUsers30d": { "type": "number"},
-                "returningUsers30d": { "type": "number"},
-                "confirmRate": { "type": "number"}
-              }
-            }
+            "qrCodeUrl": { "type": "string" },
+            "metrics": { "type": "object", "properties": { "swapTotal": { "type": "number"},"swap30d": { "type": "number"}, "swapToday": { "type": "number"}, "uniqueUsers30d": { "type": "number"}, "returningUsers30d": { "type": "number"}, "confirmRate": { "type": "number"} }},
+            "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "ownerId", "name", "address", "city", "status"]
+        "required": ["id", "ownerId", "name", "city", "status", "geo", "geohash"]
+    },
+     "cities": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "City",
+        "type": "object",
+        "description": "Dataset of cities for autocomplete and selection.",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "provinceCode": { "type": "string" },
+            "region": { "type": "string" },
+            "placeId": { "type": "string" },
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "normalizedName": { "type": "string" },
+            "keywords": { "type": "array", "items": { "type": "string" } }
+        }
     },
     "Book": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Book",
       "type": "object",
-      "description": "Represents a book available for swapping.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the book."
-        },
-        "ownerId": {
-          "type": "string",
-          "description": "The UID of the user who owns the book."
-        },
-        "title": {
-          "type": "string",
-          "description": "Title of the book."
-        },
-        "author": {
-          "type": "string",
-          "description": "Author of the book."
-        },
-        "isbn": {
-          "type": "string",
-          "description": "ISBN of the book (optional)."
-        },
-        "status": {
-            "type": "string",
-            "description": "Availability status of the book.",
-            "enum": ["available", "in-swap", "swapped"]
-        },
-        "location": {
-            "type": "object",
-            "description": "Geospatial information for the book.",
-            "properties": {
-                "lat": { "type": "number" },
-                "lng": { "type": "number" },
-                "city": { "type": "string" },
-                "geohash": { "type": "string", "description": "Geohash for location-based querying." }
-            },
-            "required": ["lat", "lng", "geohash"]
-        },
-        "imageUrls": {
-            "type": "array",
-            "description": "A list of URLs for the book's images.",
-            "items": { "type": "string" }
-        },
-        "publicationYear": {
-            "type": "number",
-            "description": "The year the book was published (optional)."
-        },
-        "publisher": {
-            "type": "string",
-            "description": "The publisher of the book (optional)."
-        },
-        "condition": {
-            "type": "string",
-            "description": "The condition of the book (e.g., new, like_new, good, fair, poor).",
-            "enum": ["new", "like_new", "good", "fair", "poor"]
-        },
-        "notes": {
-            "type": "string",
-            "description": "Additional notes or details about the book (optional)."
-        },
-        "createdAt": {
-            "type": "string",
-            "format": "date-time"
-        },
-        "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-        }
+        "id": { "type": "string" }, "ownerId": { "type": "string" }, "title": { "type": "string" }, "author": { "type": "string" }, "isbn": { "type": "string" }, "status": { "type": "string", "enum": ["available", "in-swap", "swapped"] },
+        "locationId": { "type": "string", "description": "ID of the location where the book is available. For geo-suggestions." },
+        "available": { "type": "boolean" },
+        "imageUrls": { "type": "array", "items": { "type": "string" } }, "publicationYear": { "type": "number" }, "publisher": { "type": "string" }, "condition": { "type": "string", "enum": ["new", "like_new", "good", "fair", "poor"] }, "notes": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "ownerId",
-        "title",
-        "author",
-        "status",
-        "location"
-      ]
+      "required": [ "id", "ownerId", "title", "author", "status" ]
     },
-    "WishlistItem": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "WishlistItem",
-      "type": "object",
-      "description": "Represents a book on a user's wishlist.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the wishlist item."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N WishlistItem)"
-        },
-        "title": {
-          "type": "string",
-          "description": "Title of the desired book."
-        },
-        "author": {
-          "type": "string",
-          "description": "Author of the desired book."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "title",
-        "author"
-      ]
-    },
-    "Swap": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Swap",
-      "type": "object",
-      "description": "Represents a book swap transaction.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the swap."
-        },
-        "bookId": {
-          "type": "string",
-          "description": "Reference to Book being swapped."
-        },
-        "wishlistItemId": {
-          "type": "string",
-          "description": "Reference to WishlistItem being swapped for."
-        },
-        "bookOwnerId": {
-            "type": "string",
-            "description": "The UID of the user who owns the book."
-        },
-        "wishlistOwnerId": {
-            "type": "string",
-            "description": "The UID of the user who made the wish and initiated the swap."
-        },
-        "participantIds": {
-            "type": "array",
-            "description": "An array containing the UIDs of both participants for easy querying.",
-            "items": { "type": "string" }
-        },
-        "code": {
-          "type": "string",
-          "description": "Unique code for the swap transaction."
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the swap (e.g., pending, accepted, completed, cancelled, confirmed, expired)."
-        },
-        "locationId": {
-            "type": "string",
-            "description": "ID of the location where the swap was physically confirmed."
-        },
-        "locationName": {
-            "type": "string",
-            "description": "Name of the location (denormalized)."
-        },
-        "createdAt": {"type": "string", "format": "date-time"},
-        "expiresAt": {"type": "string", "format": "date-time"},
-        "confirmedAt": {"type": "string", "format": "date-time"},
-        "confirmedBy": {"type": "string"},
-        "attempts": {"type": "number"}
-      },
-      "required": [
-        "id",
-        "bookId",
-        "wishlistItemId",
-        "bookOwnerId",
-        "wishlistOwnerId",
-        "participantIds",
-        "code",
-        "status",
-        "locationId"
-      ]
-    },
-    "Event": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Event",
-      "type": "object",
-      "description": "Represents an event hosted by a location.",
-      "properties": {
-        "id": {"type": "string"},
-        "locationId": {"type": "string"},
-        "title": {"type": "string"},
-        "description": {"type": "string"},
-        "startAt": {"type": "string", "format": "date-time"},
-        "status": {"type": "string", "enum": ["draft", "published", "canceled"]},
-        "createdAt": {"type": "string", "format": "date-time"}
-      },
-      "required": ["id", "locationId", "title", "startAt", "status"]
-    },
-     "RewardClaim": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "RewardClaim",
-      "type": "object",
-      "description": "Represents a claim for a reward by a location.",
-      "properties": {
-        "id": {"type": "string"},
-        "locationId": {"type": "string"},
-        "rewardId": {"type": "string"},
-        "createdAt": {"type": "string", "format": "date-time"},
-        "status": {"type": "string", "enum": ["pending", "approved", "rejected"]}
-      },
-      "required": ["id", "locationId", "rewardId", "createdAt", "status"]
-    },
-    "Review": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Review",
-      "type": "object",
-      "description": "Represents a review and rating for a completed swap.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the review."
-        },
-        "swapId": {
-          "type": "string",
-          "description": "Reference to the Swap this review is for."
-        },
-        "reviewerId": {
-          "type": "string",
-          "description": "The UID of the user who wrote the review."
-        },
-        "revieweeId": {
-          "type": "string",
-          "description": "The UID of the user who is being reviewed."
-        },
-        "rating": {
-          "type": "number",
-          "description": "A numerical rating from 1 to 5."
-        },
-        "comment": {
-          "type": "string",
-          "description": "The text content of the review (optional)."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the review was created."
-        }
-      },
-      "required": ["id", "swapId", "reviewerId", "revieweeId", "rating", "createdAt"]
-    },
-    "SwapPass": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SwapPass",
-      "type": "object",
-      "description": "Represents a user's swap pass subscription.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the swap pass."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User who owns the pass. (Relationship: User 1:N SwapPass)"
-        },
-        "type": {
-          "type": "string",
-          "description": "Type of swap pass (e.g., 3 swaps/month, unlimited)."
-        },
-        "startDate": {
-          "type": "string",
-          "description": "Start date of the swap pass subscription.",
-          "format": "date-time"
-        },
-        "endDate": {
-          "type": "string",
-          "description": "End date of the swap pass subscription.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "type",
-        "startDate",
-        "endDate"
-      ]
-    },
-    "LibraryTransaction": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "LibraryTransaction",
-      "type": "object",
-      "description": "Represents a transaction record for a library partner.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the transaction."
-        },
-        "libraryId": {
-          "type": "string",
-          "description": "Reference to User (Shop) that is the library. (Relationship: User 1:N LibraryTransaction)"
-        },
-        "swapId": {
-          "type": "string",
-          "description": "Reference to Swap that this transaction is for. (Relationship: Swap 1:N LibraryTransaction)"
-        },
-        "date": {
-          "type": "string",
-          "description": "Date of the transaction.",
-          "format": "date-time"
-        },
-        "amount": {
-          "type": "number",
-          "description": "Amount earned by the library for the swap."
-        }
-      },
-      "required": [
-        "id",
-        "libraryId",
-        "swapId",
-        "date",
-        "amount"
-      ]
-    },
-    "Chat": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Chat",
-      "type": "object",
-      "description": "Represents a chat conversation between users.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the chat session."
-        },
-        "users": {
-          "type": "array",
-          "description": "An array of user IDs participating in the chat.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "userNames": {
-            "type": "object",
-            "description": "A map of user IDs to user names for easy display.",
-            "additionalProperties": { "type": "string" }
-        },
-        "userAvatars": {
-            "type": "object",
-            "description": "A map of user IDs to avatar URLs for easy display.",
-            "additionalProperties": { "type": "string" }
-        },
-        "lastMessage": {
-          "type": "object",
-          "description": "The last message sent in the chat, for preview purposes.",
-          "properties": {
-            "text": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "senderId": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "required": ["id", "users", "userNames", "userAvatars"]
-    },
-    "ChatMessage": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ChatMessage",
-      "type": "object",
-      "description": "Represents a single message within a chat.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the message."
-        },
-        "senderId": {
-          "type": "string",
-          "description": "The ID of the user who sent the message."
-        },
-        "text": {
-          "type": "string",
-          "description": "The content of the message."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "The time the message was sent.",
-          "format": "date-time"
-        }
-      },
-      "required": ["id", "senderId", "text", "timestamp"]
-    }
-  },
-  "auth": {
-    "providers": [
-      "password",
-      "anonymous",
-      "google.com",
-      "apple.com",
-      "microsoft.com"
-    ]
+    "WishlistItem": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "WishlistItem", "type": "object", "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "title": { "type": "string" }, "author": { "type": "string" } }, "required": [ "id", "userId", "title", "author" ] },
+    "Swap": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Swap", "type": "object", "properties": { "id": { "type": "string" }, "bookId": { "type": "string" }, "wishlistItemId": { "type": "string" }, "bookOwnerId": { "type": "string" }, "wishlistOwnerId": { "type": "string" }, "participantIds": { "type": "array", "items": { "type": "string" } }, "code": { "type": "string" }, "status": { "type": "string" }, "locationId": { "type": "string" }, "locationName": { "type": "string" }, "createdAt": {"type": "string", "format": "date-time"}, "expiresAt": {"type": "string", "format": "date-time"}, "confirmedAt": {"type": "string", "format": "date-time"}, "confirmedBy": {"type": "string"}, "attempts": {"type": "number"} }, "required": [ "id", "bookId", "wishlistItemId", "bookOwnerId", "wishlistOwnerId", "participantIds", "code", "status", "locationId" ] },
+    "Event": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Event", "type": "object", "properties": { "id": {"type": "string"}, "locationId": {"type": "string"}, "title": {"type": "string"}, "description": {"type": "string"}, "startAt": {"type": "string", "format": "date-time"}, "status": {"type": "string", "enum": ["draft", "published", "canceled"]}, "createdAt": {"type": "string", "format": "date-time"} }, "required": ["id", "locationId", "title", "startAt", "status"] },
+     "RewardClaim": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "RewardClaim", "type": "object", "properties": { "id": {"type": "string"}, "locationId": {"type": "string"}, "rewardId": {"type": "string"}, "createdAt": {"type": "string", "format": "date-time"}, "status": {"type": "string", "enum": ["pending", "approved", "rejected"]} }, "required": ["id", "locationId", "rewardId", "createdAt", "status"] },
+    "Review": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Review", "type": "object", "properties": { "id": { "type": "string" }, "swapId": { "type": "string" }, "reviewerId": { "type": "string" }, "revieweeId": { "type": "string" }, "rating": { "type": "number" }, "comment": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" } }, "required": ["id", "swapId", "reviewerId", "revieweeId", "rating", "createdAt"] },
+    "SwapPass": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "SwapPass", "type": "object", "properties": { "id": { "type": "string" }, "userId": { "type": "string" }, "type": { "type": "string" }, "startDate": { "type": "string", "format": "date-time" }, "endDate": { "type": "string", "format": "date-time" } }, "required": [ "id", "userId", "type", "startDate", "endDate" ] },
+    "LibraryTransaction": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "LibraryTransaction", "type": "object", "properties": { "id": { "type": "string" }, "libraryId": { "type": "string" }, "swapId": { "type": "string" }, "date": { "type": "string", "format": "date-time" }, "amount": { "type": "number" } }, "required": [ "id", "libraryId", "swapId", "date", "amount" ] },
+    "Chat": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Chat", "type": "object", "properties": { "id": { "type": "string" }, "users": { "type": "array", "items": { "type": "string" } }, "userNames": { "type": "object", "additionalProperties": { "type": "string" } }, "userAvatars": { "type": "object", "additionalProperties": { "type": "string" } }, "lastMessage": { "type": "object", "properties": { "text": { "type": "string" }, "timestamp": { "type": "string", "format": "date-time" }, "senderId": { "type": "string" } } } }, "required": ["id", "users", "userNames", "userAvatars"] },
+    "ChatMessage": { "$schema": "http://json-schema.org/draft-07/schema#", "title": "ChatMessage", "type": "object", "properties": { "id": { "type": "string" }, "senderId": { "type": "string" }, "text": { "type": "string" }, "timestamp": { "type": "string", "format": "date-time" } }, "required": ["id", "senderId", "text", "timestamp"] }
   },
   "firestore": {
     "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profiles. Uses path-based ownership for user data. ",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/locations/{locationId}",
-        "definition": {
-            "entityName": "Location",
-            "schema": { "$ref": "#/backend/entities/Location" },
-            "description": "Stores data for intermediary locations (BookSwap Hubs)."
-        }
-      },
-      {
-        "path": "/books/{bookId}",
-        "definition": {
-            "entityName": "Book",
-            "schema": { "$ref": "#/backend/entities/Book" },
-            "description": "Global collection of all books available for swapping."
-        }
-      },
-      {
-        "path": "/users/{userId}/wishlist/{wishlistItemId}",
-        "definition": {
-          "entityName": "WishlistItem",
-          "schema": {
-            "$ref": "#/backend/entities/WishlistItem"
-          },
-          "description": "Stores wishlist items for a specific user. Uses path-based ownership.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "wishlistItemId",
-              "description": "The unique identifier for the wishlist item."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/swaps/{swapId}",
-        "definition": {
-          "entityName": "Swap",
-          "schema": {
-            "$ref": "#/backend/entities/Swap"
-          },
-          "description": "Stores swap transaction data.",
-          "params": [
-            {
-              "name": "swapId",
-              "description": "The unique identifier for the swap."
-            }
-          ]
-        }
-      },
-       {
-        "path": "/events/{eventId}",
-        "definition": {
-          "entityName": "Event",
-          "schema": { "$ref": "#/backend/entities/Event" },
-          "description": "Events hosted by locations."
-        }
-      },
-       {
-        "path": "/reward_claims/{claimId}",
-        "definition": {
-          "entityName": "RewardClaim",
-          "schema": { "$ref": "#/backend/entities/RewardClaim" },
-          "description": "Claims for rewards by locations."
-        }
-      },
-      {
-        "path": "/reviews/{reviewId}",
-        "definition": {
-          "entityName": "Review",
-          "schema": {
-            "$ref": "#/backend/entities/Review"
-          },
-          "description": "Stores reviews for completed swaps. Access is restricted to participants.",
-          "params": [
-            {
-              "name": "reviewId",
-              "description": "The unique identifier for the review."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/swapPasses/{swapPassId}",
-        "definition": {
-          "entityName": "SwapPass",
-          "schema": {
-            "$ref": "#/backend/entities/SwapPass"
-          },
-          "description": "Stores swap pass subscription information for users. Uses path-based ownership.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "swapPassId",
-              "description": "The unique identifier for the swap pass."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/libraryTransactions/{libraryTransactionId}",
-        "definition": {
-          "entityName": "LibraryTransaction",
-          "schema": {
-            "$ref": "#/backend/entities/LibraryTransaction"
-          },
-          "description": "Stores transaction records for library partners.",
-          "params": [
-            {
-              "name": "libraryTransactionId",
-              "description": "The unique identifier for the library transaction."
-            }
-          ]
-        }
-      },
-       {
-        "path": "/chats/{chatId}",
-        "definition": {
-          "entityName": "Chat",
-          "schema": {
-            "$ref": "#/backend/entities/Chat"
-          },
-          "description": "Stores chat sessions between users. Access is restricted to participants.",
-          "params": [
-            {
-              "name": "chatId",
-              "description": "The unique identifier for the chat."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/chats/{chatId}/messages/{messageId}",
-        "definition": {
-          "entityName": "ChatMessage",
-          "schema": {
-            "$ref": "#/backend/entities/ChatMessage"
-          },
-          "description": "Stores individual messages within a chat. Access is restricted to chat participants.",
-          "params": [
-            {
-              "name": "chatId",
-              "description": "The unique identifier for the chat."
-            },
-            {
-              "name": "messageId",
-              "description": "The unique identifier for the message."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore data structure is designed to support the BookSwap application's core features, emphasizing security, scalability, and ease of debugging. Authorization Independence is achieved through denormalization where necessary (specifically within Swaps and Chats). Structural Segregation separates user-owned data (wishlists, swap passes) from global data (users, books, library transactions, chats), simplifying security rules and enabling global queries like geo-search. Access Modeling utilizes path-based ownership for private user data and existence checks for global roles and shared documents (like chats). The structure facilitates secure `list` operations by avoiding the need for complex filtering within the rules themselves. This approach makes the rules simpler and more secure. By adhering to the design principles, we can create a maintainable, understandable, and scalable backend for the BookSwap application."
+      { "path": "/users/{userId}", "definition": { "entityName": "User", "schema": { "$ref": "#/entities/User" } } },
+      { "path": "/cities/{cityId}", "definition": { "entityName": "cities", "schema": { "$ref": "#/entities/cities" } } },
+      { "path": "/locations/{locationId}", "definition": { "entityName": "Location", "schema": { "$ref": "#/entities/Location" } } },
+      { "path": "/books/{bookId}", "definition": { "entityName": "Book", "schema": { "$ref": "#/entities/Book" } } },
+      { "path": "/users/{userId}/wishlist/{wishlistItemId}", "definition": { "entityName": "WishlistItem", "schema": { "$ref": "#/entities/WishlistItem" } } },
+      { "path": "/swaps/{swapId}", "definition": { "entityName": "Swap", "schema": { "$ref": "#/entities/Swap" } } },
+      { "path": "/events/{eventId}", "definition": { "entityName": "Event", "schema": { "$ref": "#/entities/Event" } } },
+      { "path": "/reward_claims/{claimId}", "definition": { "entityName": "RewardClaim", "schema": { "$ref": "#/entities/RewardClaim" } } },
+      { "path": "/reviews/{reviewId}", "definition": { "entityName": "Review", "schema": { "$ref": "#/entities/Review" } } },
+      { "path": "/users/{userId}/swapPasses/{swapPassId}", "definition": { "entityName": "SwapPass", "schema": { "$ref": "#/entities/SwapPass" } } },
+      { "path": "/libraryTransactions/{libraryTransactionId}", "definition": { "entityName": "LibraryTransaction", "schema": { "$ref": "#/entities/LibraryTransaction" } } },
+      { "path": "/chats/{chatId}", "definition": { "entityName": "Chat", "schema": { "$ref": "#/entities/Chat" } } },
+      { "path": "/chats/{chatId}/messages/{messageId}", "definition": { "entityName": "ChatMessage", "schema": { "$ref": "#/entities/ChatMessage" } } }
+    ]
   }
 }

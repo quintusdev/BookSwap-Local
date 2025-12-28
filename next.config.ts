@@ -1,7 +1,11 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  env: {
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || '',
+  },
   devIndicators: {
     allowedDevOrigins: [
       'https://*.cloudworkstations.dev',
@@ -28,7 +32,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https': 'https',
         hostname: 'picsum.photos',
         port: '',
         pathname: '/**',

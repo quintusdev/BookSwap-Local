@@ -48,20 +48,40 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
     
     match /users/{userId} {
+      // Admins can read/write any user. Users can only read/write their own document.
       allow read, write: if isOwnerOrAdmin(userId);
+      // Only Admins can list all users.
       allow list: if isRole(request.auth.uid, 'admin');
+
+      // Specific rule for profile updates: users can only update their own profile fields.
+      allow update: if isOwner(userId)
+                    && request.resource.data.keys().hasOnly(['profile']);
+    }
+
+    match /cities/{cityId} {
+      // City data is public and read-only for clients.
+      allow get, list: if isSignedIn();
+      allow write: if isRole(request.auth.uid, 'admin');
     }
     
     match /locations/{locationId} {
-      // Any signed-in user can view location details.
-      allow get: if isSignedIn();
-      // Only the assigned intermediary or an admin can read the full doc / list.
-      // This is important for protecting sensitive metrics or settings.
-      allow read, list: if isIntermediaryOfLocationOrAdmin(locationId);
-      // Only the assigned intermediary or an admin can update (limited fields).
-      allow update: if isIntermediaryOfLocationOrAdmin(locationId)
-                      && request.resource.data.keys().hasOnly(['name', 'address', 'city', 'location', 'qrToken']); // Example limited fields
+      // Any signed-in user can view active location details.
+      allow get: if isSignedIn() && resource.data.status == 'active';
+      // Intermediaries can list active locations for the map. Admins can list all.
+      allow list: if isSignedIn();
+
+      // The assigned intermediary or an admin can read the full doc for their dashboard.
+      allow read: if isIntermediaryOfLocationOrAdmin(locationId);
+
+      // Intermediary can only update a limited set of non-critical fields.
+      allow update: if isIntermediaryOfLocation(locationId)
+                      && request.resource.data.keys().hasOnly(['name', 'address', 'description']); // Example editable fields
+
+      // Admins have full control.
       allow create, delete: if isRole(request.auth.uid, 'admin');
+      // Prevent client-side modification of critical geo-fields.
+      allow update: if isRole(request.auth.uid, 'admin')
+                    && !('geohash' in request.resource.data.diff(resource.data).affectedKeys());
     }
 
     match /books/{bookId} {
@@ -79,21 +99,18 @@ service cloud.firestore {
     }
 
     match /swaps/{swapId} {
-      // Participants and the intermediary of the location can get the swap. Admins can too.
       allow get: if (isSignedIn() && (request.auth.uid in resource.data.participantIds || isIntermediaryOfLocation(resource.data.locationId))) || isRole(request.auth.uid, 'admin');
-      // Intermediaries can list swaps for their location. Admins can list all.
       allow list: if isIntermediaryOrAdmin();
       allow create: if (isSignedIn() && request.auth.uid == request.resource.data.wishlistOwnerId);
-      // Users can accept/cancel. Intermediaries CANNOT update status directly (must use Cloud Function).
+      // Users can accept/cancel, but CANNOT change status to 'confirmed'. This must be done server-side.
       allow update: if (isSignedIn() && request.auth.uid in resource.data.participantIds)
-                    && !("status" in request.resource.data.diff(resource.data).affectedKeys());
+                    && !("status" in request.resource.data.diff(resource.data).affectedKeys())
+                    || (request.resource.data.status != "confirmed");
       allow delete: if isRole(request.auth.uid, 'admin');
     }
     
     match /events/{eventId} {
-      // Publicly readable
       allow get, list: if isSignedIn();
-      // Intermediary can manage events for their location
       allow create: if isIntermediaryOfLocation(request.resource.data.locationId);
       allow update, delete: if isIntermediaryOfLocation(resource.data.locationId);
     }
@@ -113,6 +130,7 @@ service cloud.firestore {
 
     match /chats/{chatId} {
       allow read, update, create: if isSignedIn() && request.auth.uid in resource.data.users;
+      allow list: if isSignedIn() && request.auth.uid in resource.data.users;
 
       match /messages/{messageId} {
         allow list, get: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.users.hasAny([request.auth.uid]);
@@ -122,7 +140,6 @@ service cloud.firestore {
       }
     }
     
-    // --- RULES FOR EMAIL AND LEAD GENERATION ---
     match /mail/{docId} {
         allow read, write, create, list, delete: if false;
     }
