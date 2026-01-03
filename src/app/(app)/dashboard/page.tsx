@@ -36,6 +36,7 @@ const hubStats = {
     ],
     currentMilestone: { name: 'Punto Attivo', threshold: 10, icon: Award },
     nextMilestone: { name: 'Hub di Comunità', threshold: 50, icon: Star },
+    activeBenefits: ["Badge 'Punto Attivo'", "Visibilità sulla mappa"],
 };
 
 const completedSwaps = mockSwaps.filter((s) => s.status === 'completed');

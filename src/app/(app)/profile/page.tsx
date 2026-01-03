@@ -44,10 +44,14 @@ type UserProfile = {
     id: string;
     name: string;
     email: string;
-    city: string;
-    subscription: 'Free' | 'Pro' | 'Collector';
-    avatarUrl: string;
-    favoriteGenres?: string[];
+    profile: {
+        primaryCity?: { name: string };
+        avatarUrl?: string;
+        favoriteGenres?: string[];
+    };
+    subscription?: {
+        status?: 'active' | 'trialing' | 'cancelled' | 'past_due';
+    };
     localCounters?: { [key: string]: number };
 }
 
@@ -94,14 +98,14 @@ export default function ProfilePage() {
         if (userProfile) {
             form.reset({
                 name: userProfile.name,
-                city: userProfile.city,
+                city: userProfile.profile?.primaryCity?.name || '',
             });
         }
     }, [userProfile, form]);
 
     function onProfileSubmit(values: z.infer<typeof profileSchema>) {
         if (!userDocRef) return;
-        setDocumentNonBlocking(userDocRef, values, { merge: true });
+        setDocumentNonBlocking(userDocRef, { name: values.name }, { merge: true });
         toast({ title: "Profile updated successfully!" });
     }
 
@@ -172,7 +176,7 @@ export default function ProfilePage() {
                                 <FormItem className="space-y-2">
                                     <FormLabel>{t('profile_info_city_label')}</FormLabel>
                                     <FormControl>
-                                    <Input {...field} />
+                                    <Input {...field} disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -241,17 +245,17 @@ export default function ProfilePage() {
 
         <div className="space-y-8">
             <Card className="text-center relative">
-                 {userProfile.subscription !== 'Free' && (
+                 {userProfile.subscription?.status && userProfile.subscription.status !== 'cancelled' && (
                     <div className="absolute top-4 right-4">
-                        <Badge className='bg-primary text-primary-foreground'>
+                        <Badge className='bg-primary text-primary-foreground capitalize'>
                             <Star className='h-4 w-4 mr-2 fill-primary-foreground'/>
-                            {t(userProfile.subscription.toLowerCase())}
+                            {userProfile.subscription.status === 'active' ? t('pro') : t(userProfile.subscription.status)}
                         </Badge>
                     </div>
                 )}
                 <CardContent className='pt-6'>
                     <Avatar className='mx-auto h-24 w-24 mb-4'>
-                        <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />
+                        <AvatarImage src={userProfile.profile.avatarUrl} alt={userProfile.name} />
                         <AvatarFallback>{userProfile.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
                      <Button variant="outline">{t('profile_avatar_change_button')}</Button>
@@ -263,9 +267,9 @@ export default function ProfilePage() {
                     <CardTitle>{t('profile_subscription_title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className='text-sm font-semibold'>{t('profile_subscription_on_plan_1')} <span className='text-primary'>{t((userProfile.subscription || 'free').toLowerCase())}</span> {t('profile_subscription_on_plan_2')}</p>
+                    <p className='text-sm font-semibold'>{t('profile_subscription_on_plan_1')} <span className='text-primary capitalize'>{t((userProfile.subscription?.status || 'free').toLowerCase())}</span> {t('profile_subscription_on_plan_2')}</p>
                     <p className='text-xs text-muted-foreground mt-1'>
-                        {userProfile.subscription === 'Free' ? t('profile_subscription_upgrade_prompt') : t('profile_subscription_thank_you')}
+                        {userProfile.subscription?.status !== 'active' ? t('profile_subscription_upgrade_prompt') : t('profile_subscription_thank_you')}
                     </p>
                     <Button variant="outline" className="w-full mt-4" asChild>
                        <Link href="/pricing">{t('profile_subscription_manage_button')}</Link>
@@ -281,7 +285,7 @@ export default function ProfilePage() {
 
 function GenreManager({ userProfile, userDocRef }: { userProfile: UserProfile, userDocRef: any }) {
     const { t } = useLanguage();
-    const [selectedGenres, setSelectedGenres] = useState<string[]>(userProfile.favoriteGenres || []);
+    const [selectedGenres, setSelectedGenres] = useState<string[]>(userProfile.profile.favoriteGenres || []);
     const { toast } = useToast();
 
     const handleGenreToggle = (genre: string) => {
@@ -297,7 +301,7 @@ function GenreManager({ userProfile, userDocRef }: { userProfile: UserProfile, u
     }
 
     const handleSave = () => {
-        setDocumentNonBlocking(userDocRef, { favoriteGenres: selectedGenres }, { merge: true });
+        setDocumentNonBlocking(userDocRef, { 'profile.favoriteGenres': selectedGenres }, { merge: true });
         toast({ title: t('profile_genres_save_success') });
     }
 
@@ -374,4 +378,3 @@ function GenrePicker({ selectedGenres, onGenreToggle }: { selectedGenres: string
     </Popover>
   );
 }
-
