@@ -1,5 +1,5 @@
 📚 BookSwap Local
-
+commento per commit
 BookSwap Local è una web / mobile app che permette lo scambio di libri tra persone della stessa zona, utilizzando **locali commerciali (bar, librerie, spazi culturali)** come punti di scambio ufficiali.
 
 Non è un marketplace.
