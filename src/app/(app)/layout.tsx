@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
 import { useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -19,6 +19,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const { user, isUserLoading } = useUser();
     const router = useRouter();
     const firestore = getFirestore();
+    const pathname = usePathname();
 
     const userDocRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -32,15 +33,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         if (!isLoading) {
             if (!user) {
                 router.replace('/login');
-            } else if (!userProfile?.profile?.primaryCity) {
+            } else if (!userProfile?.profile?.primaryCity && pathname !== '/onboarding/location') {
                 router.replace('/onboarding/location');
             }
         }
-    }, [user, isUserLoading, userProfile, isProfileLoading, router]);
+    }, [user, isUserLoading, userProfile, isProfileLoading, router, pathname]);
 
     const isLoading = isUserLoading || isProfileLoading;
 
-    if (isLoading || !user || !userProfile?.profile?.primaryCity) {
+    if ((isLoading || !user || !userProfile?.profile?.primaryCity) && pathname !== '/onboarding/location') {
         return (
              <div className="flex min-h-screen flex-col">
                 <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
