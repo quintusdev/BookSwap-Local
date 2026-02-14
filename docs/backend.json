@@ -1,161 +1,545 @@
-
 {
   "entities": {
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user in the BookSwap application.",
+      "description": "Represents a user account within the BookSwap application. It stores profile information and roles. Authentication details like passwords are managed by an external system (e.g., Firebase Authentication).",
       "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the user (matches Firebase Auth UID)." },
-        "email": { "type": "string", "description": "User's email address.", "format": "email" },
-        "name": { "type": "string", "description": "User's full name or business name." },
-        "role": { "type": "string", "description": "Role of the user, determines permissions.", "enum": ["reader", "intermediary", "admin"] },
-        "locationId": { "type": ["string", "null"], "description": "For 'intermediary' role, the ID of the location they manage." },
-        "profile": {
-            "type": "object",
-            "description": "User's public profile and location settings.",
-            "properties": {
-                "primaryCity": {
-                    "type": "object",
-                    "properties": {
-                        "name": { "type": "string" }, "provinceCode": { "type": "string" }, "placeId": { "type": "string" }, "lat": { "type": "number" }, "lng": { "type": "number" }
-                    },
-                    "required": ["name", "provinceCode", "placeId", "lat", "lng"]
-                },
-                "secondaryCity": {
-                    "type": ["object", "null"],
-                    "properties": {
-                        "name": { "type": "string" }, "provinceCode": { "type": "string" }, "placeId": { "type": "string" }, "lat": { "type": "number" }, "lng": { "type": "number" }
-                    }
-                },
-                "activeCity": { "type": "string", "enum": ["primary", "secondary"] },
-                "avatarUrl": { "type": "string", "format": "uri" },
-                "favoriteGenres": { "type": "array", "items": { "type": "string" } },
-                "rating": { "type": "number", "minimum": 0, "maximum": 5 },
-                "reviewCount": { "type": "number", "minimum": 0 },
-                "createdAt": { "type": "string", "format": "date-time" },
-                "updatedAt": { "type": "string", "format": "date-time" }
-            },
-            "required": ["primaryCity", "activeCity", "createdAt", "updatedAt"]
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
         },
-        "subscription": {
-          "type": "object",
-          "description": "Subscription details, primarily for 'intermediary' role.",
-          "properties": {
-             "status": { "type": "string", "enum": ["active", "trialing", "cancelled", "past_due"] }
-          }
+        "email": {
+          "type": "string",
+          "description": "The email address associated with the user account, used for contact and display purposes. This is separate from authentication data.",
+          "format": "email"
         },
-        "acceptedTermsAt": { "type": "string", "format": "date-time" },
-        "acceptedPrivacyAt": { "type": "string", "format": "date-time" }
+        "displayName": {
+          "type": "string",
+          "description": "The public display name or username chosen by the user."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user within the application, determining access and functionality. Can be 'user' (reader) or 'shop' (independent library owner)."
+        },
+        "city": {
+          "type": "string",
+          "description": "The primary city where the user is located, which helps in filtering local book swaps."
+        },
+        "currentSubscriptionId": {
+          "type": "string",
+          "description": "Reference to the user's active UserSubscription. Null if the user has no active subscription beyond the free tier. (Relationship: User 1:1 UserSubscription)"
+        },
+        "libraryId": {
+          "type": "string",
+          "description": "Reference to the Library entity if the user has a 'shop' role and manages a specific library. Null for regular users. (Relationship: User 1:1 Library)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was last updated.",
+          "format": "date-time"
+        }
       },
-      "required": ["id", "email", "name", "role", "profile"]
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "role",
+        "city",
+        "createdAt",
+        "updatedAt"
+      ]
     },
-    "Location": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "title": "Location",
-        "type": "object",
-        "description": "Represents an intermediary location (BookSwap Hub).",
-        "properties": {
-            "id": { "type": "string" },
-            "ownerId": { "type": "string", "description": "UID of the 'intermediary' user who owns this location." },
-            "name": { "type": "string" },
-            "address": { "type": "string" },
-            "city": { "type": "string" },
-            "provinceCode": { "type": "string" },
-            "status": { "type": "string", "enum": ["active", "pending", "suspended"]},
-            "geo": {
-                "type": "object", "properties": { "lat": { "type": "number" }, "lng": { "type": "number" } }, "required": ["lat", "lng"]
-            },
-            "geohash": { "type": "string", "description": "Server-generated geohash for location queries." },
-            "milestoneLevel": { "type": "number", "minimum": 0, "default": 0 },
-            "qrToken": { "type": "string", "description": "Unique secret token to generate QR codes." },
-            "metrics": { "type": "object", "properties": { "swapTotal": { "type": "number"}, "swap30d": { "type": "number"} }},
-            "createdAt": { "type": "string", "format": "date-time" },
-            "updatedAt": { "type": "string", "format": "date-time" }
+    "Library": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Library",
+      "type": "object",
+      "description": "Represents an independent bookstore that partners with BookSwap as an official exchange point.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Library entity."
         },
-        "required": ["id", "ownerId", "name", "city", "status", "geo", "createdAt", "updatedAt"]
+        "name": {
+          "type": "string",
+          "description": "The official name of the independent library."
+        },
+        "address": {
+          "type": "string",
+          "description": "The full physical address of the library."
+        },
+        "city": {
+          "type": "string",
+          "description": "The city where the library is located, used for local search and filtering."
+        },
+        "contactEmail": {
+          "type": "string",
+          "description": "The contact email address for the library.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The contact phone number for the library."
+        },
+        "ownerUserId": {
+          "type": "string",
+          "description": "Reference to the User who owns/manages this library, typically a user with the 'shop' role. (Relationship: Library 1:1 User)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the library record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the library record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address",
+        "city",
+        "contactEmail",
+        "ownerUserId",
+        "createdAt",
+        "updatedAt"
+      ]
     },
     "Book": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Book",
       "type": "object",
-      "description": "A book listed by a user for swapping.",
+      "description": "Represents a generic book title, containing bibliographic information. This is distinct from a physical copy available for swap.",
       "properties": {
-        "id": { "type": "string" }, 
-        "ownerId": { "type": "string" }, 
-        "title": { "type": "string" }, 
-        "author": { "type": "string" }, 
-        "isbn": { "type": ["string", "null"] }, 
-        "status": { "type": "string", "enum": ["available", "reserved", "swapped"], "default": "available" },
-        "location": {
-          "type": "object",
-          "properties": {
-            "lat": { "type": "number" },
-            "lng": { "type": "number" },
-            "city": { "type": "string" },
-            "geohash": { "type": "string" }
-          },
-          "required": ["lat", "lng", "city", "geohash"]
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Book entity."
         },
-        "imageUrls": { "type": "array", "items": { "type": "string", "format": "uri" } },
-        "condition": { "type": "string", "enum": ["new", "like_new", "good", "fair", "poor"] },
-        "notes": { "type": "string" }, 
-        "createdAt": { "type": "string", "format": "date-time" }, 
-        "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": [ "id", "ownerId", "title", "author", "status", "location", "createdAt", "updatedAt" ]
-    },
-    "Swap": { 
-      "$schema": "http://json-schema.org/draft-07/schema#", 
-      "title": "Swap", 
-      "type": "object",
-      "description": "Represents a book swap transaction and its state.",
-      "properties": { 
-        "id": { "type": "string" },
-        "requesterId": { "type": "string" },
-        "requesterBookId": { "type": "string" },
-        "ownerId": { "type": "string" }, 
-        "ownerBookId": { "type": "string" },
-        "participantIds": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2 },
-        "status": { "type": "string", "enum": ["requested", "accepted", "confirmed", "completed", "cancelled", "rejected", "expired"] }, 
-        "locationId": { "type": "string", "description": "The ID of the hub where the swap will be confirmed." },
-        "confirmationCode": { "type": "string", "description": "A short, server-generated code for in-person confirmation."},
-        "denormalized": {
-            "type": "object",
-            "properties": {
-                "requesterName": { "type": "string" },
-                "ownerName": { "type": "string" },
-                "requesterBookTitle": { "type": "string" },
-                "ownerBookTitle": { "type": "string" },
-                "locationName": { "type": "string" }
-            }
+        "title": {
+          "type": "string",
+          "description": "The full title of the book."
         },
-        "createdAt": {"type": "string", "format": "date-time"}, 
-        "updatedAt": {"type": "string", "format": "date-time"}, 
-        "expiresAt": {"type": "string", "format": "date-time", "description": "Server-set expiration timestamp for the request."}, 
-        "confirmedAt": {"type": ["string", "null"], "format": "date-time"},
-        "confirmedBy": {"type": ["string", "null"], "description": "UID of the intermediary who confirmed the swap."}
-      }, 
-      "required": [ "id", "requesterId", "requesterBookId", "ownerId", "ownerBookId", "participantIds", "status", "locationId", "createdAt", "updatedAt" ] 
-    },
-     "cities": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "title": "City", "type": "object", "description": "Dataset of cities for autocomplete and selection.",
-        "properties": {
-            "name": { "type": "string" }, "provinceCode": { "type": "string" }, "region": { "type": "string" }, "placeId": { "type": "string" }, "lat": { "type": "number" }, "lng": { "type": "number" }
+        "author": {
+          "type": "string",
+          "description": "The author(s) of the book."
+        },
+        "isbn": {
+          "type": "string",
+          "description": "The International Standard Book Number (ISBN) of the book. Optional but highly recommended for identification."
+        },
+        "publisher": {
+          "type": "string",
+          "description": "The publisher of the book. (Optional)"
+        },
+        "publicationYear": {
+          "type": "number",
+          "description": "The year the book was published. (Optional)"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to the cover image of the book. (Optional)",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the book record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the book record was last updated.",
+          "format": "date-time"
         }
+      },
+      "required": [
+        "id",
+        "title",
+        "author",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AvailableBook": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AvailableBook",
+      "type": "object",
+      "description": "Represents a specific physical copy of a book that a user has made available for swapping.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AvailableBook entity."
+        },
+        "bookId": {
+          "type": "string",
+          "description": "Reference to the generic Book entity being offered. (Relationship: AvailableBook N:1 Book)"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Reference to the User who owns and is offering this physical book. (Relationship: AvailableBook N:1 User)"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of this available book. E.g., 'available', 'pending_swap', 'swapped', 'archived'."
+        },
+        "condition": {
+          "type": "string",
+          "description": "The physical condition of the book. E.g., 'new', 'good', 'fair', 'worn'."
+        },
+        "listedCity": {
+          "type": "string",
+          "description": "The city where this specific physical book is currently listed for local swap. This might differ from the owner's default city."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when this book was listed as available.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the available book's record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "bookId",
+        "ownerId",
+        "status",
+        "condition",
+        "listedCity",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WishlistItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WishlistItem",
+      "type": "object",
+      "description": "Represents a specific book that a user desires to receive through a swap.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the WishlistItem entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who desires this book. (Relationship: WishlistItem N:1 User)"
+        },
+        "bookId": {
+          "type": "string",
+          "description": "Reference to the generic Book entity that is desired. (Relationship: WishlistItem N:1 Book)"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of this wishlist item. E.g., 'active', 'fulfilled', 'removed'."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when this book was added to the user's wishlist.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the wishlist item's record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "bookId",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Swap": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Swap",
+      "type": "object",
+      "description": "Represents a single book swap transaction, detailing the transfer of an AvailableBook from a donor to a recipient, facilitated by a partner library.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Swap entity."
+        },
+        "swapCode": {
+          "type": "string",
+          "description": "A unique, short code generated for this specific swap, used for check-in at libraries."
+        },
+        "offeredAvailableBookId": {
+          "type": "string",
+          "description": "Reference to the AvailableBook entity that is being transferred in this swap. (Relationship: Swap N:1 AvailableBook)"
+        },
+        "donorUserId": {
+          "type": "string",
+          "description": "Reference to the User who is giving away the offered book. (Relationship: Swap N:1 User)"
+        },
+        "recipientUserId": {
+          "type": "string",
+          "description": "Reference to the User who will receive the offered book. (Relationship: Swap N:1 User)"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the swap. E.g., 'initiated', 'code_generated', 'checked_in', 'completed', 'cancelled'."
+        },
+        "libraryId": {
+          "type": "string",
+          "description": "Reference to the Library entity where this swap is intended to be (or was) checked in. (Relationship: Swap N:1 Library)"
+        },
+        "passUsedType": {
+          "type": "string",
+          "description": "Records the type of 'Swap Pass' used by the recipient for this transaction (e.g., 'free_tier', 'monthly_pass', 'unlimited_pass')."
+        },
+        "initiatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the swap was initially matched or proposed.",
+          "format": "date-time"
+        },
+        "codeGeneratedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the unique swap code was generated.",
+          "format": "date-time"
+        },
+        "checkInDateTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the swap was checked in at the library. Null until check-in occurs.",
+          "format": "date-time"
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the swap was marked as completed. Null until completion.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the swap record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the swap record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "swapCode",
+        "offeredAvailableBookId",
+        "donorUserId",
+        "recipientUserId",
+        "status",
+        "libraryId",
+        "passUsedType",
+        "initiatedAt",
+        "codeGeneratedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserSubscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserSubscription",
+      "type": "object",
+      "description": "Manages a user's subscription to the 'Swap Pass' system, tracking their current tier and swap allowances.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserSubscription entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User this subscription belongs to. (Relationship: UserSubscription N:1 User)"
+        },
+        "subscriptionType": {
+          "type": "string",
+          "description": "The type of swap pass subscription. E.g., 'free_tier', 'monthly_pass', 'unlimited_pass'."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date and time when the current subscription period started.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The date and time when the current subscription period is scheduled to end. Null for 'unlimited_pass' or if not applicable.",
+          "format": "date-time"
+        },
+        "swapsRemaining": {
+          "type": "number",
+          "description": "The number of swaps remaining for the current period (for 'free_tier' or 'monthly_pass'). Not applicable for 'unlimited_pass'."
+        },
+        "lastPaymentDate": {
+          "type": "string",
+          "description": "Timestamp of the last successful payment for paid subscriptions. Null for 'free_tier'.",
+          "format": "date-time"
+        },
+        "stripeCustomerId": {
+          "type": "string",
+          "description": "The customer ID generated by Stripe for this user. Used to manage billing without storing sensitive payment info. (Relationship: UserSubscription 1:1 Stripe Customer)"
+        },
+        "stripeSubscriptionId": {
+          "type": "string",
+          "description": "The subscription ID generated by Stripe for this subscription. Used to manage the recurring billing. (Relationship: UserSubscription 1:1 Stripe Subscription)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the subscription record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the subscription record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "subscriptionType",
+        "startDate",
+        "createdAt",
+        "updatedAt"
+      ]
     }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
     "structure": [
-      { "path": "/users/{userId}", "definition": { "entityName": "User", "schema": { "$ref": "#/entities/User" } } },
-      { "path": "/cities/{cityId}", "definition": { "entityName": "cities", "schema": { "$ref": "#/entities/cities" } } },
-      { "path": "/locations/{locationId}", "definition": { "entityName": "Location", "schema": { "$ref": "#/entities/Location" } } },
-      { "path": "/books/{bookId}", "definition": { "entityName": "Book", "schema": { "$ref": "#/entities/Book" } } },
-      { "path": "/swaps/{swapId}", "definition": { "entityName": "Swap", "schema": { "$ref": "#/entities/Swap" } } }
-    ]
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles including email, display name, role ('user' or 'shop'), and city. Each user can read and write only their own profile. Includes references to `currentSubscriptionId` and `libraryId`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching `request.auth.uid`."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wishlistItems/{wishlistItemId}",
+        "definition": {
+          "entityName": "WishlistItem",
+          "schema": {
+            "$ref": "#/backend/entities/WishlistItem"
+          },
+          "description": "Stores books that a specific user desires. Only the owner user (`userId` in path and document) can read/write their wishlist items. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this wishlist item."
+            },
+            {
+              "name": "wishlistItemId",
+              "description": "The unique identifier for the wishlist item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "UserSubscription",
+          "schema": {
+            "$ref": "#/backend/entities/UserSubscription"
+          },
+          "description": "Manages a user's swap pass subscription details. Only the owner user (`userId` in path and document) can read/write their subscription data. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this subscription."
+            },
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the user's subscription."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/libraries/{libraryId}",
+        "definition": {
+          "entityName": "Library",
+          "schema": {
+            "$ref": "#/backend/entities/Library"
+          },
+          "description": "Stores information for independent partner libraries. Publicly readable. Only the `ownerUserId` (stored in the document) can modify their library's information. Includes 'ownerUserId' for authorization.",
+          "params": [
+            {
+              "name": "libraryId",
+              "description": "The unique identifier for the library."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/books/{bookId}",
+        "definition": {
+          "entityName": "Book",
+          "schema": {
+            "$ref": "#/backend/entities/Book"
+          },
+          "description": "A central catalog of generic book titles and bibliographic information. Publicly readable by all users. Writes are assumed to be restricted or managed by an internal process for MVP.",
+          "params": [
+            {
+              "name": "bookId",
+              "description": "The unique identifier for the book title."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/availableBooks/{availableBookId}",
+        "definition": {
+          "entityName": "AvailableBook",
+          "schema": {
+            "$ref": "#/backend/entities/AvailableBook"
+          },
+          "description": "Represents a specific physical copy of a book a user has made available for swapping. Publicly listable (filterable by 'listedCity'). Only the `ownerId` (stored in the document) can modify or delete their listed book. Includes 'ownerId' and 'listedCity' for authorization and QAPs.",
+          "params": [
+            {
+              "name": "availableBookId",
+              "description": "The unique identifier for the available book instance."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/swaps/{swapId}",
+        "definition": {
+          "entityName": "Swap",
+          "schema": {
+            "$ref": "#/backend/entities/Swap"
+          },
+          "description": "Records individual book swap transactions. Access is granted to the `donorUserId`, `recipientUserId`, or the `libraryOwnerId` (denormalized from the associated Library). Includes 'donorUserId', 'recipientUserId', 'libraryId', and denormalized 'libraryOwnerId' for authorization independence and QAPs.",
+          "params": [
+            {
+              "name": "swapId",
+              "description": "The unique identifier for the swap transaction."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore data structure for BookSwap Local prioritizes security, scalability, and debuggability, adhering strictly to the core design principles and mandates. The overall strategy focuses on explicit authorization contexts and structural segregation to simplify security rules and support efficient query patterns.\n\n**Authorization Independence (CRITICAL):**\nAuthorization independence is achieved primarily through strategic denormalization and path-based ownership, eliminating the need for `get()` calls in Firestore Security Rules.\n\n1.  **Swap Entity Denormalization:** For the complex `Swap` entity, we denormalize `libraryOwnerId` (the `ownerUserId` from the associated `Library` document) directly into each `Swap` document. A `Swap` document will therefore contain `donorUserId`, `recipientUserId`, `libraryId`, and `libraryOwnerId`. This ensures that a `shop` user can access (read/write) all swaps associated with their library (`request.auth.uid == resource.data.libraryOwnerId`) without performing a `get(/libraries/{libraryId})` lookup. This is vital for atomic operations and simplifies rule logic considerably, making them robust against race conditions and easier to debug.\n2.  **Path-Based Ownership:** For inherently private user data, such as `WishlistItem`s and `UserSubscription`s, a hierarchical path like `/users/{userId}/wishlistItems/{wishlistItemId}` is used. This embeds the `userId` directly into the path, allowing security rules to simply compare `request.auth.uid` with the `{userId}` wildcard. The `userId` is also redundantly stored within the document itself, providing an additional layer of explicit ownership and direct access validation without external lookups.\n\n**QAPs (Rules are not Filters):**\nQuery-As-Permission (QAP) is supported by ensuring documents in a collection share homogeneous security requirements and by explicitly including queryable fields within the documents.\n\n1.  **Structural Segregation for Public vs. Private Data:**\n    *   Generic book information (`/books`) and available books (`/availableBooks`) are top-level collections, designed for broad public read access, with specific fields (e.g., `listedCity` in `AvailableBook`) enabling efficient, secure filtering directly at the database level.\n    *   User-specific private data (`WishlistItem`, `UserSubscription`) is nested under `/users/{userId}`, ensuring that `list` operations inherently apply only to the authenticated user's data.\n2.  **Explicit Query Fields:** For `AvailableBook`s, the `listedCity` field is present to allow efficient `list` operations filtered by city. For `Swap`s, `donorUserId`, `recipientUserId`, and the denormalized `libraryOwnerId` serve as direct queryable fields. This allows security rules to validate client-side queries (e.g., `where('listedCity', '==', '...')` or `where('donorUserId', '==', request.auth.uid)`) against the requested data, ensuring that unauthorized data is never returned and rules do not attempt to 'filter' results post-fetch.\n\n**DBAC (No Custom Claims) and Roles:**\nThe `role` field within the `/users/{userId}` document will determine user capabilities ('user' or 'shop'). For 'shop' users, their `libraryId` and the `ownerUserId` in the `/libraries/{libraryId}` collection, along with the denormalized `libraryOwnerId` in `/swaps/{swapId}`, provide the necessary database-centric access control without relying on custom claims. This keeps authorization logic explicit and database-driven.\n\n**Addressing \"auth/operation-not-allowed\" Error:**\nThe reported \"auth/operation-not-allowed\" error is typically related to Firebase Authentication configuration in the Firebase console, specifically meaning that the authentication provider (e.g., Email/Password) has not been enabled for your project. This Firestore data structure design does not directly cause or resolve such an error. It assumes Firebase Authentication is correctly set up and enabled for the chosen providers (email/password, anonymous as per input) to manage user identity (`request.auth.uid`) which is then used by Firestore Security Rules to enforce access control."
   }
 }
-
-    

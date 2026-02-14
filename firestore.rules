@@ -1,123 +1,201 @@
-
+/**
+ * BookSwap Firestore Security Rules
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for private data (wishlists, subscriptions) while allowing public, read-only access to shared catalogs (books, libraries, available books). Writes to publicly visible documents are restricted to the designated owner of that document. Access to transactional documents like Swaps is limited to the direct participants.
+ *
+ * Data Structure:
+ * - /users/{userId} contains private user profiles and serves as the root for user-specific subcollections like /wishlistItems and /subscriptions.
+ * - /libraries, /books, and /availableBooks are top-level collections designed for public browsing.
+ * - /swaps is a top-level collection for transactional records, secured on a per-document basis.
+ *
+ * Key Security Decisions:
+ * - User Enumeration is Disabled: Listing the top-level /users collection is explicitly disallowed to protect user privacy.
+ * - Ownership is Enforced: Users can only read or write data within their own /users/{userId} data tree. For public collections like /libraries and /availableBooks, only the user specified in the document's 'owner' field can modify it.
+ * - Shared Access for Swaps: A swap document can only be accessed by the donor, the recipient, or the owner of the library facilitating the exchange.
+ * - Default Secure: Operations are denied by default. Permissions are explicitly granted. Destructive operations like deleting user profiles or swap records are disabled.
+ *
+ * Denormalization for Authorization:
+ * These rules rely on denormalized data for efficient and secure authorization. For example, a `Swap` document must contain `donorUserId`, `recipientUserId`, and `libraryOwnerId` fields. This avoids costly and slow `get()` calls in the rules, ensuring that authorization decisions are fast and based solely on the data in the requested document.
+ *
+ * Structural Segregation:
+ * Private user data (e.g., /users/{userId}/wishlistItems) is structurally separated from public data (e.g., /availableBooks). This segregation simplifies security rules for list operations and improves query performance, ensuring users can only list their own private documents or publicly accessible collections.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // --------------------------------------------------------------------
+    // Helper Functions
+    // --------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
     function isSignedIn() {
       return request.auth != null;
     }
 
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing document ownership.
+     */
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
+    /**
+     * Checks if the document being written to already exists.
+     * CRITICAL for all update and delete operations.
+     */
+    function isExistingDoc() {
+      return resource != null;
     }
 
-    function isRole(userId, role) {
-      return getUserData(userId).role == role;
+
+
+    /**
+     * Checks if a user owns an existing document via an ownership field.
+     * This is the standard check for update/delete on public-read collections.
+     */
+    function isOwnerOfExistingDoc(ownerId) {
+      return isOwner(ownerId) && isExistingDoc();
+    }
+
+    /**
+     * Checks if a user is a participant (donor, recipient) or the associated
+     * library owner of a specific swap transaction.
+     * Relies on denormalized data within the Swap document.
+     */
+    function isSwapParticipantOrLibraryOwner(swapData) {
+      let uid = request.auth.uid;
+      return isSignedIn() && (
+        uid == swapData.donorUserId ||
+        uid == swapData.recipientUserId ||
+        uid == swapData.libraryOwnerId // Assumes denormalization from Library
+      );
     }
     
-    function isOneOfRoles(userId, roles) {
-      return getUserData(userId).role in roles;
-    }
+    // --------------------------------------------------------------------
+    // Collection Rules
+    // --------------------------------------------------------------------
 
-    function isIntermediaryOfLocation(locationId) {
-      let userData = getUserData(request.auth.uid);
-      return userData.role == 'intermediary' && userData.locationId == locationId;
-    }
-    
-    function serverTimestampOrUnchanged(fieldName) {
-      return request.resource.data[fieldName] == request.time || request.resource.data[fieldName] == resource.data[fieldName];
-    }
-    
-    // --- Collection Rules ---
-
-    // Users: Can only write to their own doc, and only specific fields.
+    /**
+     * @description Manages user profiles. A user can create their own profile,
+     * read it, and update it. No other user can access it.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user reads their own document at /users/abc-123.
+     * @deny  (get) A user at /users/xyz-789 tries to read /users/abc-123.
+     * @deny  (list) Any user tries to list the /users collection.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && request.resource.data.keys().hasOnly(['profile', 'updatedAt']);
-      allow delete: if isRole(request.auth.uid, 'admin');
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) && isExistingDoc() && request.resource.data.id == resource.data.id;
+      allow delete: if false;
     }
 
-    // Cities: Public read-only dataset.
-    match /cities/{cityId} {
+    /**
+     * @description Manages a user's private wishlist. Only the owner can manage their items.
+     * @path /users/{userId}/wishlistItems/{wishlistItemId}
+     * @allow (create) User 'abc-123' creates a new document in their own /users/abc-123/wishlistItems subcollection.
+     * @deny  (list) User 'xyz-789' tries to list items in /users/abc-123/wishlistItems.
+     * @principle Enforces data privacy by ensuring all subcollection access is owned by the parent document's user.
+     */
+    match /users/{userId}/wishlistItems/{wishlistItemId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && isExistingDoc() && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && isExistingDoc();
+    }
+
+    /**
+     * @description Manages a user's private subscription details. Only the owner can view or modify their subscription.
+     * @path /users/{userId}/subscriptions/{subscriptionId}
+     * @allow (get) User 'abc-123' reads their subscription document at /users/abc-123/subscriptions/sub-1.
+     * @deny  (update) User 'xyz-789' tries to modify the subscription at /users/abc-123/subscriptions/sub-1.
+     * @principle Enforces data privacy by ensuring all subcollection access is owned by the parent document's user.
+     */
+    match /users/{userId}/subscriptions/{subscriptionId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && isExistingDoc() && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && isExistingDoc();
+    }
+
+    /**
+     * @description Stores information for partner libraries. This data is public for anyone to read.
+     * Only the designated owner of the library can create, update, or delete it.
+     * @path /libraries/{libraryId}
+     * @allow (list) An unauthenticated user lists all documents in the /libraries collection.
+     * @allow (update) The user whose UID is in the `ownerUserId` field updates the library document.
+     * @deny  (update) A user who is not the `ownerUserId` tries to modify the library document.
+     * @principle Implements a "Public Read, Owner-Only Write" access pattern.
+     */
+    match /libraries/{libraryId} {
       allow get, list: if true;
-      allow write: if false; // Managed by admin/backend process
-    }
-    
-    // Locations: Publicly readable, but writing is restricted.
-    match /locations/{locationId} {
-      allow get: if resource.data.status == 'active';
-      allow list: if true;
-
-      // Intermediary can edit some details, but not critical fields.
-      allow update: if isIntermediaryOfLocation(locationId)
-                    && request.resource.data.keys().hasOnly(['name', 'address', 'updatedAt'])
-                    && serverTimestampOrUnchanged('updatedAt');
-      
-      // Admin has full control.
-      allow create, update: if isRole(request.auth.uid, 'admin');
-      allow delete: if isRole(request.auth.uid, 'admin');
-
-      // Crucially, geohash cannot be written by clients.
-      deny write: if 'geohash' in request.resource.data.diff(resource.data).affectedKeys();
+      allow create: if isSignedIn() && request.resource.data.ownerUserId == request.auth.uid;
+      allow update: if isOwnerOfExistingDoc(resource.data.ownerUserId) && request.resource.data.ownerUserId == resource.data.ownerUserId;
+      allow delete: if isOwnerOfExistingDoc(resource.data.ownerUserId);
     }
 
-    // Books: Owner can create/update/delete. Others can read.
+    /**
+     * @description A public catalog of book information. This collection is readable by everyone.
+     * Writes are disabled as it's assumed to be managed by an internal/admin process.
+     * @path /books/{bookId}
+     * @allow (get) Any user, signed in or not, can read a specific book's details.
+     * @deny  (create) A regular user attempts to add a new book to the catalog.
+     * @principle Secures a read-only public dataset from unauthorized modification.
+     */
     match /books/{bookId} {
-        allow read: if true;
-        allow create: if isOwner(request.resource.data.ownerId) && serverTimestampOrUnchanged('createdAt');
-        allow update: if isOwner(resource.data.ownerId) 
-                      && serverTimestampOrUnchanged('updatedAt')
-                      && !('ownerId' in request.resource.data.diff(resource.data).affectedKeys());
-        allow delete: if isOwner(resource.data.ownerId);
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
-    // Swaps: The core of the server-authoritative logic.
+    /**
+     * @description Represents physical books available for swapping. The list is public.
+     * Only the user who listed the book can modify or remove their listing.
+     * @path /availableBooks/{availableBookId}
+     * @allow (list) Any user can query the collection to find available books.
+     * @allow (create) An authenticated user lists their own book for swapping, setting `ownerId` to their UID.
+     * @deny  (delete) A user tries to delete a book listing where `resource.data.ownerId` is not their UID.
+     * @principle Implements a "Public Read, Owner-Only Write" access pattern.
+     */
+    match /availableBooks/{availableBookId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isOwnerOfExistingDoc(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwnerOfExistingDoc(resource.data.ownerId);
+    }
+
+    /**
+     * @description Records of book swap transactions. Access to a specific swap is restricted to its participants.
+     * Listing is only allowed if the query is scoped to the current user.
+     * @path /swaps/{swapId}
+     * @allow (get) The `donorUserId`, `recipientUserId`, or `libraryOwnerId` reads the swap document.
+     * @deny  (get) A user not involved in the swap tries to read the document.
+     * @deny  (list) A user tries to list all swaps without filtering by their own UID.
+     * @principle Enforces access control for shared data and secures list queries using Query-As-Permission (QAP).
+     */
     match /swaps/{swapId} {
-      allow get: if request.auth.uid in resource.data.participantIds || isIntermediaryOfLocation(resource.data.locationId);
-      allow list: if isSignedIn(); // Queries must be secured with 'where' clauses.
-
-      // CREATE: Only a requester can initiate a swap.
-      allow create: if isSignedIn()
-                    && request.auth.uid == request.resource.data.requesterId
-                    && request.resource.data.status == 'requested'
-                    && request.resource.data.requesterId in request.resource.data.participantIds
-                    && request.resource.data.ownerId in request.resource.data.participantIds
-                    && request.resource.data.size() == 9; // Enforce minimal fields on create
-      
-      // UPDATE: State machine logic.
-      allow update: if isSignedIn() && request.auth.uid in resource.data.participantIds
-                    && serverTimestampOrUnchanged('updatedAt')
-                    // Transition: owner accepts a request
-                    && resource.data.status == 'requested' 
-                    && request.resource.data.status == 'accepted' 
-                    && request.auth.uid == resource.data.ownerId
-                    // Transition: requester cancels a pending request
-                    && resource.data.status == 'requested' 
-                    && request.resource.data.status == 'cancelled'
-                    && request.auth.uid == resource.data.requesterId
-                    // Transition: any participant cancels an accepted swap
-                    && resource.data.status == 'accepted' 
-                    && request.resource.data.status == 'cancelled';
-
-      // Only an intermediary can confirm the swap. This should ideally be a Cloud Function.
-      // This rule is a placeholder for that server-side logic.
-      allow update: if isIntermediaryOfLocation(resource.data.locationId)
-                    && resource.data.status == 'accepted'
-                    && request.resource.data.status == 'confirmed'
-                    && request.resource.data.confirmedBy == request.auth.uid;
-    }
-    
-    // Default deny all other collections.
-    match /{path=**} {
-      allow read, write: if false;
+      allow get: if isExistingDoc() && isSwapParticipantOrLibraryOwner(resource.data);
+      // FIX: The previous rule for 'list' used 'request.query.get()' incorrectly,
+      // as 'request.query' does not have a 'get' method for accessing query filters directly.
+      // To ensure "highly secure authorization" and fix the syntax error,
+      // and given the difficulty of precisely inspecting client-side 'where' clauses for 'list' operations
+      // on top-level collections like '/swaps' in Firestore Security Rules,
+      // the 'list' operation is being denied. This prevents unauthorized broad data access
+      // and ensures that only specific, authorized document fetches are allowed based on the 'get' rule.
+      // For list operations, clients should query a user-specific subcollection (e.g., /users/{userId}/mySwaps)
+      // or rely on fetching individual documents by ID.
+      allow list: if false; // Deny list to prevent unauthorized broad data access and fix syntax.
+      allow create: if isSignedIn() && (request.resource.data.donorUserId == request.auth.uid || request.resource.data.recipientUserId == request.auth.uid);
+      allow update: if isExistingDoc() && isSwapParticipantOrLibraryOwner(resource.data) && request.resource.data.donorUserId == resource.data.donorUserId && request.resource.data.recipientUserId == resource.data.recipientUserId;
+      allow delete: if false;
     }
   }
 }
-
-    
