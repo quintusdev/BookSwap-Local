@@ -9,7 +9,7 @@ export default function RootPage() {
   useEffect(() => {
     // This page now permanently redirects to the new, comprehensive landing page.
     router.replace('/landing');
-  }, [router]);
+  }, []);
 
   return (
     <div className="flex h-screen w-full items-center justify-center">
