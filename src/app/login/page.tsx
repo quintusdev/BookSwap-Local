@@ -25,11 +25,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/logo';
 import { useLanguage } from '@/context/language-context';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
-import { signInWithPopup, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, OAuthProvider, UserCredential } from 'firebase/auth';
+import { doc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -76,8 +79,10 @@ const MicrosoftIcon = () => (
 export default function LoginPage() {
   const { t } = useLanguage();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -101,9 +106,33 @@ export default function LoginPage() {
       authProvider = new OAuthProvider('microsoft.com');
     }
     
-    signInWithPopup(auth, authProvider).catch(error => {
+    signInWithPopup(auth, authProvider)
+      .then((result) => handleSuccessfulLogin(result))
+      .catch(error => {
         console.error(`${provider} login error:`, error);
+        toast({
+            variant: "destructive",
+            title: "Accesso Fallito",
+            description: "Impossibile completare l'accesso con questo provider."
+        });
     })
+  };
+
+  const handleSuccessfulLogin = (userCredential: UserCredential) => {
+    const loggedInUser = userCredential.user;
+    if (loggedInUser) {
+      const userRef = doc(firestore, 'users', loggedInUser.uid);
+      setDocumentNonBlocking(userRef, {
+        id: loggedInUser.uid,
+        email: loggedInUser.email,
+        name: loggedInUser.displayName,
+        role: 'reader',
+        userType: 'reader',
+        avatarUrl: loggedInUser.photoURL || `https://avatar.vercel.sh/${loggedInUser.email}.png`,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    }
   };
 
 
