@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -7,8 +8,8 @@ export default function DiventaIntermediarioRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to the main landing page, which now includes the intermediary CTA
-    router.replace('/landing');
+    // Redirect to the main landing page, which is now the root
+    router.replace('/');
   }, [router]);
 
   return (
@@ -17,3 +18,5 @@ export default function DiventaIntermediarioRedirectPage() {
     </div>
   );
 }
+
+    
